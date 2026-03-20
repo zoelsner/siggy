@@ -1,0 +1,8 @@
+node_modules/
+.next/
+.siggy-runtime/
+.env.local
+.playwright-mcp/
+screenshots/
+competitive-analysis.html
+coverage
