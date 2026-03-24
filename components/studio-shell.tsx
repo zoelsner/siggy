@@ -10,9 +10,9 @@ import {
 } from "react";
 
 import { trackEvent } from "@/lib/analytics";
-import { clientProfiles } from "@/lib/client-profiles";
 import { createDefaultDocument } from "@/lib/default-document";
-import { createImportedDocument, touchDocument } from "@/lib/document";
+import { touchDocument } from "@/lib/document";
+import { fontOptions, isSystemFont } from "@/lib/fonts";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
 import { templateDefinitions } from "@/lib/templates";
 import type { AssetUploadResponse, RenderResult, SignatureDocument } from "@/lib/types";
@@ -21,21 +21,117 @@ import { InstallGuide } from "./install-guide";
 
 const accentChoices = ["#4f46e5", "#0f9f68", "#cb7a12", "#d74545", "#2563eb", "#111827"];
 
+const fontFamilyMap: Record<string, string> = {
+  "dm-sans": "'DM Sans', sans-serif",
+  "montserrat": "'Montserrat', sans-serif",
+  "plus-jakarta": "'Plus Jakarta Sans', sans-serif",
+  "unbounded": "'Unbounded', sans-serif",
+  "georgia": "Georgia, serif",
+  "arial": "Arial, sans-serif",
+};
+
 function buildPreviewMarkup(html: string) {
   return `<!DOCTYPE html><html lang="en"><body style="margin:0;padding:24px;background:#ffffff;">${html}</body></html>`;
 }
 
+function TemplateThumbnail({ templateId }: { templateId: string }) {
+  const m = "var(--thumb-muted)";
+  const s = "var(--thumb-strong)";
+  const a = "var(--thumb-accent)";
+  const b = "var(--thumb-bar)";
+
+  const wrap = (children: React.ReactNode) => (
+    <div className="template-thumb__inner">{children}</div>
+  );
+
+  switch (templateId) {
+    case "edge":
+      return wrap(
+        <div style={{ display: "flex", gap: 4, width: "100%" }}>
+          <div style={{ width: 3, borderRadius: 1, background: b, alignSelf: "stretch", flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: a, flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ width: "65%", height: 2.5, background: s, borderRadius: 1, marginBottom: 2 }} />
+                <div style={{ width: "50%", height: 1.5, background: m, borderRadius: 1 }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    case "bold":
+      return wrap(
+        <div style={{ width: "100%" }}>
+          <div style={{ width: "75%", height: 3, background: s, borderRadius: 1, marginBottom: 1.5 }} />
+          <div style={{ width: "55%", height: 3, background: b, borderRadius: 1, marginBottom: 2 }} />
+          <div style={{ width: "100%", height: 1.5, background: b, borderRadius: 1, marginBottom: 3 }} />
+          <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ width: "40%", height: 1.5, background: m, borderRadius: 1 }} />
+            <div style={{ width: 1, background: m, alignSelf: "stretch" }} />
+            <div style={{ width: "35%", height: 1.5, background: m, borderRadius: 1 }} />
+          </div>
+        </div>
+      );
+    case "card":
+      return wrap(
+        <div style={{ border: "1px solid var(--thumb-muted)", borderRadius: 3, display: "flex", overflow: "hidden", width: "100%" }}>
+          <div style={{ width: 14, background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: a }} />
+          </div>
+          <div style={{ flex: 1, padding: "4px 5px", minWidth: 0 }}>
+            <div style={{ width: "65%", height: 2, background: s, borderRadius: 1, marginBottom: 2 }} />
+            <div style={{ width: "50%", height: 1.5, background: m, borderRadius: 1 }} />
+          </div>
+        </div>
+      );
+    case "clean":
+      return wrap(
+        <div style={{ width: "100%" }}>
+          <div style={{ width: "50%", height: 2.5, background: s, borderRadius: 1, marginBottom: 2 }} />
+          <div style={{ width: "55%", height: 1.5, background: m, borderRadius: 1, marginBottom: 3 }} />
+          <div style={{ width: "70%", height: 1.5, background: m, borderRadius: 1, opacity: 0.6 }} />
+        </div>
+      );
+    default:
+      return null;
+  }
+}
+
+// Update with your real LemonSqueezy product URL after creating the product
+const CHECKOUT_URL = "https://siggy.lemonsqueezy.com/buy/TODO";
+
+function useUnlocked() {
+  const [unlocked, setUnlocked] = useState(false);
+
+  useEffect(() => {
+    // Check URL params for purchase redirect
+    const params = new URLSearchParams(window.location.search);
+    // LemonSqueezy redirect params: {order_id}, {order_uuid}, {checkout_hash}
+    const key = params.get("order_id") || params.get("checkout_hash") || params.get("key");
+    if (key) {
+      localStorage.setItem("siggy_key", key);
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    setUnlocked(!!localStorage.getItem("siggy_key"));
+  }, []);
+
+  return unlocked;
+}
+
 export function StudioShell() {
+  const unlocked = useUnlocked();
   const [document, setDocument] = useState<SignatureDocument>(() => createDefaultDocument());
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [renderState, setRenderState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
   const [renderError, setRenderError] = useState<string | null>(null);
-  const [copyLabel, setCopyLabel] = useState("Copy Gmail HTML");
+  const [copyLabel, setCopyLabel] = useState("Copy HTML");
   const [isInstallOpen, setInstallOpen] = useState(false);
   const [installConfirmed, setInstallConfirmed] = useState(false);
   const [imageStatus, setImageStatus] = useState<string | null>(null);
   const [isUploading, setUploading] = useState(false);
-  const importInputRef = useRef<HTMLInputElement>(null);
+  const [isRenderingName, setRenderingName] = useState(false);
   const adapterRef = useRef(createBrowserDraftAdapter());
   const hasTrackedInputRef = useRef(false);
   const deferredDocument = useDeferredValue(document);
@@ -69,7 +165,8 @@ export function StudioShell() {
           },
           body: JSON.stringify({
             document: deferredDocument,
-            profileId: "gmail_web"
+            profileId: "gmail_web",
+            unlocked
           }),
           signal: controller.signal
         });
@@ -99,7 +196,51 @@ export function StudioShell() {
 
     void run();
     return () => controller.abort();
-  }, [deferredDocument]);
+  }, [deferredDocument, unlocked]);
+
+  // Render name as image when name or font changes (debounced)
+  useEffect(() => {
+    if (isSystemFont(deferredDocument.fontFamily)) {
+      // System fonts don't need rendering — clear any existing name image
+      if (deferredDocument.nameImage) {
+        setDocument((current) => ({ ...current, nameImage: null }));
+      }
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setRenderingName(true);
+      try {
+        const response = await fetch("/api/render-name", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: deferredDocument.fullName,
+            fontFamily: deferredDocument.fontFamily,
+            accentColor: deferredDocument.accentColor,
+            weight: 700,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error("Name render failed:", response.status, await response.text());
+          return;
+        }
+
+        const payload = (await response.json()) as AssetUploadResponse;
+        setDocument((current) => ({
+          ...current,
+          nameImage: payload.asset,
+        }));
+      } catch {
+        // Silently fail — text fallback will be used
+      } finally {
+        setRenderingName(false);
+      }
+    }, 600); // debounce 600ms
+
+    return () => clearTimeout(timer);
+  }, [deferredDocument.fullName, deferredDocument.fontFamily, deferredDocument.accentColor]);
 
   function updateDocument(mutator: (current: SignatureDocument) => SignatureDocument) {
     setDocument((current) => {
@@ -124,56 +265,17 @@ export function StudioShell() {
     navigator.clipboard
       .writeText(renderResult.html)
       .then(() => {
-        setCopyLabel("Copied");
+        setCopyLabel("Copied!");
         setInstallOpen(true);
         trackEvent("copy_clicked", {
           charCount: renderResult.sizeBudget.charCount
         });
-        window.setTimeout(() => setCopyLabel("Copy Gmail HTML"), 1600);
+        window.setTimeout(() => setCopyLabel("Copy HTML"), 1600);
       })
       .catch(() => {
         setCopyLabel("Copy failed");
-        window.setTimeout(() => setCopyLabel("Copy Gmail HTML"), 1800);
+        window.setTimeout(() => setCopyLabel("Copy HTML"), 1800);
       });
-  }
-
-  function handleExport() {
-    const blob = new Blob([JSON.stringify(document, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const anchor = documentRef("a");
-    anchor.href = url;
-    anchor.download = "siggy-signature.json";
-    anchor.click();
-    URL.revokeObjectURL(url);
-    trackEvent("draft_exported", {
-      templateId: document.templateId
-    });
-  }
-
-  function handleImportTrigger() {
-    importInputRef.current?.click();
-  }
-
-  async function handleImport(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    try {
-      const text = await file.text();
-      const imported = createImportedDocument(text);
-      startTransition(() => {
-        setDocument(imported);
-      });
-      trackEvent("draft_imported", {
-        templateId: imported.templateId
-      });
-    } catch {
-      setRenderError("That file could not be imported as a Siggy document.");
-    } finally {
-      event.target.value = "";
-    }
   }
 
   async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -205,7 +307,7 @@ export function StudioShell() {
         image: payload.asset
       }));
 
-      setImageStatus("Image processed for email-safe dimensions.");
+      setImageStatus("Image ready.");
       trackEvent("image_uploaded", {
         bytes: file.size
       });
@@ -215,16 +317,6 @@ export function StudioShell() {
       setUploading(false);
       event.target.value = "";
     }
-  }
-
-  function handleReset() {
-    adapterRef.current.clear();
-    setDocument(createDefaultDocument());
-    setImageStatus(null);
-    setInstallOpen(false);
-    setInstallConfirmed(false);
-    setRenderError(null);
-    trackEvent("draft_reset");
   }
 
   function handleInstallConfirm() {
@@ -248,78 +340,270 @@ export function StudioShell() {
   }
 
   const previewMarkup = renderResult ? buildPreviewMarkup(renderResult.html) : "";
-  const budgetWidth = renderResult
-    ? Math.min(100, (renderResult.sizeBudget.charCount / renderResult.sizeBudget.hardLimit) * 100)
-    : 0;
 
   return (
     <main className="page-shell">
       <div className="topbar">
         <div className="wordmark">
           <div className="wordmark__badge">S</div>
-          <div className="wordmark__meta">
-            <span className="eyebrow">Gmail-first, Outlook-ready</span>
-            <span className="wordmark__title">Siggy MVP</span>
-          </div>
+          <span className="wordmark__title">Siggy</span>
         </div>
-        <div className="topbar__chips">
-          <span className="chip chip--strong">No auth in phase 1</span>
-          <span className="chip">Local draft save</span>
-          <span className="chip">Deterministic HTML render</span>
-        </div>
+        {unlocked ? (
+          <button
+            className="button button--primary"
+            disabled={!renderResult || renderState === "rendering"}
+            onClick={handleCopy}
+            type="button"
+          >
+            {copyLabel}
+          </button>
+        ) : (
+          <a
+            className="button button--primary"
+            href={CHECKOUT_URL}
+          >
+            Get Siggy — $49
+          </a>
+        )}
       </div>
 
-      <section className="hero">
-        <div className="hero__copy">
-          <div className="eyebrow">Execution path</div>
-          <h1 className="hero__title">
-            Build the <em>proof loop</em>, not just the editor.
-          </h1>
-          <p className="hero__desc">
-            Siggy is optimized for fast self-serve setup on Gmail today, with conservative render
-            rules and client profiles that keep the output portable to Outlook later.
-          </p>
-          <div className="hero__proof">
-            <span className="chip chip--strong">Public support: Gmail web</span>
-            <span className="chip">Internal validation: Outlook web, Outlook classic, Apple Mail</span>
-            <span className="chip">Export/import before auth</span>
+      <section className="studio-grid">
+        <aside className="sidebar">
+          <div>
+            <h2 className="sidebar__heading">Signature Editor</h2>
+            <div className="sidebar__sub">The editorial utility</div>
           </div>
-        </div>
-        <aside className="hero__card">
-          <div className="eyebrow">Success criteria</div>
-          <h2>What this build is trying to prove</h2>
-          <div className="stat-grid">
-            <div className="stat">
-              <span className="stat__label">Time to copy</span>
-              <span className="stat__value">Under 2 min</span>
+
+          <div className="sidebar__divider" />
+
+          <div className="field">
+            <label htmlFor="fullName">Name</label>
+            <input
+              id="fullName"
+              onChange={(event) =>
+                updateDocument((current) => ({
+                  ...current,
+                  fullName: event.target.value
+                }))
+              }
+              value={document.fullName}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="jobTitle">Job title</label>
+            <input
+              id="jobTitle"
+              onChange={(event) =>
+                updateDocument((current) => ({
+                  ...current,
+                  jobTitle: event.target.value
+                }))
+              }
+              value={document.jobTitle}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="company">Company</label>
+            <input
+              id="company"
+              onChange={(event) =>
+                updateDocument((current) => ({
+                  ...current,
+                  company: event.target.value
+                }))
+              }
+              value={document.company}
+            />
+          </div>
+
+          <div className="sidebar__divider" />
+
+          <div className="sidebar__row">
+            <div className="field">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    email: event.target.value
+                  }))
+                }
+                value={document.email}
+              />
             </div>
-            <div className="stat">
-              <span className="stat__label">Public support</span>
-              <span className="stat__value">Gmail first</span>
+            <div className="field">
+              <label htmlFor="phone">Phone</label>
+              <input
+                id="phone"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    phone: event.target.value
+                  }))
+                }
+                value={document.phone}
+              />
             </div>
-            <div className="stat">
-              <span className="stat__label">Future surface</span>
-              <span className="stat__value">Outlook-ready</span>
+          </div>
+          <div className="field">
+            <label htmlFor="website">Website</label>
+            <input
+              id="website"
+              onChange={(event) =>
+                updateDocument((current) => ({
+                  ...current,
+                  website: event.target.value
+                }))
+              }
+              value={document.website}
+            />
+          </div>
+
+          <div className="sidebar__divider" />
+
+          <div className="field">
+            <label>Font</label>
+            <div className="font-picker">
+              {fontOptions.map((font) => (
+                <button
+                  key={font.id}
+                  className={`font-option ${document.fontFamily === font.id ? "font-option--active" : ""}`}
+                  onClick={() =>
+                    updateDocument((current) => ({
+                      ...current,
+                      fontFamily: font.id,
+                    }))
+                  }
+                  style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
+                  type="button"
+                >
+                  {font.name}
+                </button>
+              ))}
             </div>
+            {isRenderingName ? (
+              <div className="helper-text">Rendering name...</div>
+            ) : null}
+          </div>
+
+          <div className="field">
+            <label>Accent color</label>
+            <div className="swatch-row">
+              {accentChoices.map((choice) => (
+                <button
+                  key={choice}
+                  aria-label={`Use ${choice}`}
+                  className={`swatch ${document.accentColor === choice ? "swatch--active" : ""}`}
+                  onClick={() =>
+                    updateDocument((current) => ({
+                      ...current,
+                      accentColor: choice
+                    }))
+                  }
+                  style={{ backgroundColor: choice }}
+                  type="button"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="imageUpload">Headshot</label>
+            <input id="imageUpload" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} type="file" />
+            <div className="helper-text">
+              {isUploading ? "Processing..." : imageStatus ?? "Optional. Resized to 128px."}
+            </div>
+            {document.image ? (
+              <button
+                className="button button--subtle button--small"
+                onClick={() =>
+                  updateDocument((current) => ({
+                    ...current,
+                    image: null
+                  }))
+                }
+                type="button"
+              >
+                Remove image
+              </button>
+            ) : null}
+          </div>
+
+          <div className="sidebar__divider" />
+
+          {document.socials.map((social, index) => (
+            <div className="field" key={social.id}>
+              <label htmlFor={`social-${social.platform}`}>{social.platform}</label>
+              <input
+                id={`social-${social.platform}`}
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    socials: current.socials.map((entry, entryIndex) =>
+                      entryIndex === index
+                        ? {
+                            ...entry,
+                            url: event.target.value
+                          }
+                        : entry
+                    )
+                  }))
+                }
+                placeholder={`${social.platform.toLowerCase()}.com/username`}
+                value={social.url}
+              />
+            </div>
+          ))}
+
+          <div className="sidebar__divider" />
+
+          <div className="field">
+            <label htmlFor="ctaText">CTA Label</label>
+            <input
+              id="ctaText"
+              onChange={(event) =>
+                updateDocument((current) => ({
+                  ...current,
+                  cta: { text: event.target.value, url: current.cta?.url ?? "" }
+                }))
+              }
+              placeholder="Book a call"
+              value={document.cta?.text ?? ""}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="ctaUrl">CTA Link</label>
+            <input
+              id="ctaUrl"
+              onChange={(event) =>
+                updateDocument((current) => ({
+                  ...current,
+                  cta: { text: current.cta?.text ?? "", url: event.target.value }
+                }))
+              }
+              placeholder="https://calendly.com/you"
+              value={document.cta?.url ?? ""}
+            />
           </div>
         </aside>
-      </section>
 
-      <section className="studio-grid">
-        <aside className="panel">
-          <div className="panel__header">
-            <div>
-              <div className="panel__title">Template system</div>
-              <p className="panel__sub">
-                Six fixed layouts with tokenized styling. No drag-and-drop, no arbitrary HTML.
-              </p>
-            </div>
+        <div className="main-area">
+          <div className="preview-card">
+            {renderResult ? (
+              <iframe className="preview-frame" srcDoc={previewMarkup} title="Siggy preview" />
+            ) : renderState === "error" ? (
+              <div className="error-state">{renderError}</div>
+            ) : (
+              <div className="empty-state">Rendering preview...</div>
+            )}
           </div>
-          <div className="template-grid">
+
+          <div className="template-strip">
             {templateDefinitions.map((template) => (
               <button
                 key={template.id}
-                className={`template-card ${document.templateId === template.id ? "template-card--active" : ""}`}
+                className={`template-thumb ${document.templateId === template.id ? "template-thumb--active" : ""}`}
                 onClick={() => {
                   trackEvent("template_selected", { templateId: template.id });
                   startTransition(() => {
@@ -331,341 +615,25 @@ export function StudioShell() {
                     );
                   });
                 }}
+                title={template.name}
                 type="button"
               >
-                <div className="template-card__preview">
-                  <div className="template-card__avatar" />
-                  <div className="template-card__lines">
-                    <div className="template-card__line" />
-                    <div className="template-card__line" />
-                    <div className="template-card__line" />
-                  </div>
-                </div>
-                <div className="template-card__meta">
-                  <span className="template-card__title">{template.name}</span>
-                  <span className="template-card__desc">{template.description}</span>
-                  <span className="helper-text">{template.headline}</span>
-                </div>
+                <TemplateThumbnail templateId={template.id} />
+                <span className="template-thumb__label">{template.name}</span>
               </button>
             ))}
           </div>
-        </aside>
 
-        <section className="panel">
-          <div className="panel__header">
-            <div>
-              <div className="panel__title">Signature document</div>
-              <p className="panel__sub">
-                Browser-local drafts today, cloud persistence later through the same document model.
-              </p>
-            </div>
-            <div className="button-row">
-              <button className="button" onClick={handleExport} type="button">
-                Export JSON
-              </button>
-              <button className="button" onClick={handleImportTrigger} type="button">
-                Import JSON
-              </button>
-              <button className="button button--subtle" onClick={handleReset} type="button">
-                Reset
-              </button>
-            </div>
-            <input
-              accept="application/json"
-              hidden
-              onChange={handleImport}
-              ref={importInputRef}
-              type="file"
-            />
-          </div>
+          {renderError ? <div className="error-state">{renderError}</div> : null}
 
-          <div className="form-grid">
-            <div className="section-card">
-              <div className="section-card__title">Core identity</div>
-              <div className="field-grid">
-                <div className="field">
-                  <label htmlFor="fullName">Full name</label>
-                  <input
-                    id="fullName"
-                    onChange={(event) =>
-                      updateDocument((current) => ({
-                        ...current,
-                        fullName: event.target.value
-                      }))
-                    }
-                    value={document.fullName}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="jobTitle">Job title</label>
-                  <input
-                    id="jobTitle"
-                    onChange={(event) =>
-                      updateDocument((current) => ({
-                        ...current,
-                        jobTitle: event.target.value
-                      }))
-                    }
-                    value={document.jobTitle}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="company">Company</label>
-                  <input
-                    id="company"
-                    onChange={(event) =>
-                      updateDocument((current) => ({
-                        ...current,
-                        company: event.target.value
-                      }))
-                    }
-                    value={document.company}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="draftName">Draft name</label>
-                  <input
-                    id="draftName"
-                    onChange={(event) =>
-                      updateDocument((current) => ({
-                        ...current,
-                        meta: {
-                          ...current.meta,
-                          draftName: event.target.value
-                        }
-                      }))
-                    }
-                    value={document.meta.draftName}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="section-card">
-              <div className="section-card__title">Contact points</div>
-              <div className="field-grid">
-                <div className="field">
-                  <label htmlFor="email">Email</label>
-                  <input
-                    id="email"
-                    onChange={(event) =>
-                      updateDocument((current) => ({
-                        ...current,
-                        email: event.target.value
-                      }))
-                    }
-                    value={document.email}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="phone">Phone</label>
-                  <input
-                    id="phone"
-                    onChange={(event) =>
-                      updateDocument((current) => ({
-                        ...current,
-                        phone: event.target.value
-                      }))
-                    }
-                    value={document.phone}
-                  />
-                </div>
-                <div className="field field-grid--single" style={{ gridColumn: "1 / -1" }}>
-                  <label htmlFor="website">Website</label>
-                  <input
-                    id="website"
-                    onChange={(event) =>
-                      updateDocument((current) => ({
-                        ...current,
-                        website: event.target.value
-                      }))
-                    }
-                    value={document.website}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="section-card">
-              <div className="section-card__title">Accent and profile image</div>
-              <div className="field-grid field-grid--single">
-                <div className="field">
-                  <label>Accent color</label>
-                  <div className="swatch-row">
-                    {accentChoices.map((choice) => (
-                      <button
-                        key={choice}
-                        aria-label={`Use ${choice}`}
-                        className={`swatch ${document.accentColor === choice ? "swatch--active" : ""}`}
-                        onClick={() =>
-                          updateDocument((current) => ({
-                            ...current,
-                            accentColor: choice
-                          }))
-                        }
-                        style={{ backgroundColor: choice }}
-                        type="button"
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="field">
-                  <label htmlFor="imageUpload">Headshot image</label>
-                  <input id="imageUpload" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} type="file" />
-                  <div className="helper-text">
-                    {isUploading ? "Processing image for email-safe dimensions..." : imageStatus ?? "Optional. Image uploads are resized and normalized server-side."}
-                  </div>
-                  {document.image ? (
-                    <div className="button-row">
-                      <a className="button" href={document.image.url} rel="noreferrer" target="_blank">
-                        Open asset
-                      </a>
-                      <button
-                        className="button button--subtle"
-                        onClick={() =>
-                          updateDocument((current) => ({
-                            ...current,
-                            image: null
-                          }))
-                        }
-                        type="button"
-                      >
-                        Remove image
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            <div className="section-card">
-              <div className="section-card__title">Social links</div>
-              <div className="field-grid">
-                {document.socials.map((social, index) => (
-                  <div className="field" key={social.id}>
-                    <label htmlFor={`social-${social.platform}`}>{social.platform}</label>
-                    <input
-                      id={`social-${social.platform}`}
-                      onChange={(event) =>
-                        updateDocument((current) => ({
-                          ...current,
-                          socials: current.socials.map((entry, entryIndex) =>
-                            entryIndex === index
-                              ? {
-                                  ...entry,
-                                  url: event.target.value
-                                }
-                              : entry
-                          )
-                        }))
-                      }
-                      placeholder={`${social.platform}.com/username`}
-                      value={social.url}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <aside className="panel preview-panel">
-          <div className="panel__header">
-            <div>
-              <div className="panel__title">Preview, copy, and proof</div>
-              <p className="panel__sub">
-                Preview and copied HTML come from the same render route so Gmail behavior is easier to trust.
-              </p>
-            </div>
-            <div className="button-row">
-              <button
-                className="button button--primary"
-                disabled={!renderResult || renderState === "rendering"}
-                onClick={handleCopy}
-                type="button"
-              >
-                {copyLabel}
-              </button>
-            </div>
-          </div>
-
-          <div className="preview-shell">
-            <div className="preview-card">
-              {renderResult ? (
-                <iframe className="preview-frame" srcDoc={previewMarkup} title="Siggy preview" />
-              ) : renderState === "error" ? (
-                <div className="error-state">{renderError}</div>
-              ) : (
-                <div className="empty-state">Rendering signature preview...</div>
-              )}
-            </div>
-
-            <div className="section-card">
-              <div className="section-card__title">Render status</div>
-              <div className="status-row">
-                <span className="chip chip--strong">Target: Gmail web</span>
-                <span className="chip">State: {renderState}</span>
-                {renderResult ? (
-                  <span className="chip mono">{renderResult.sizeBudget.charCount} chars</span>
-                ) : null}
-              </div>
-              {renderResult ? (
-                <>
-                  <div className="meter" style={{ marginTop: "14px" }}>
-                    <div
-                      className={`meter__fill meter__fill--${renderResult.sizeBudget.status}`}
-                      style={{ width: `${budgetWidth}%` }}
-                    />
-                  </div>
-                  <div className="helper-text" style={{ marginTop: "10px" }}>
-                    Soft limit {renderResult.sizeBudget.softLimit} · hard limit {renderResult.sizeBudget.hardLimit}
-                  </div>
-                </>
-              ) : null}
-            </div>
-
-            {renderError ? <div className="error-state">{renderError}</div> : null}
-
-            {renderResult?.warnings.length ? (
-              <div className="warning-list">
-                {renderResult.warnings.map((warning) => (
-                  <div className={`warning warning--${warning.severity}`} key={warning.code}>
-                    {warning.message}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">No current rendering warnings for the Gmail profile.</div>
-            )}
-
-            <InstallGuide
-              isConfirmed={installConfirmed}
-              isOpen={isInstallOpen}
-              onConfirmInstall={handleInstallConfirm}
-              onToggle={handleInstallToggle}
-            />
-
-            <div className="support-grid">
-              {Object.values(clientProfiles).map((profile) => (
-                <div className="support-card" key={profile.id}>
-                  <div className="support-card__eyebrow">Client profile</div>
-                  <div className="support-card__title">{profile.label}</div>
-                  <p>{profile.installSurface}</p>
-                  <div
-                    className={`support-card__status support-card__status--${profile.launchStatus}`}
-                  >
-                    {profile.launchStatus === "public" ? "Public now" : "Validation only"}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
+          <InstallGuide
+            isConfirmed={installConfirmed}
+            isOpen={isInstallOpen}
+            onConfirmInstall={handleInstallConfirm}
+            onToggle={handleInstallToggle}
+          />
+        </div>
       </section>
     </main>
   );
-}
-
-function documentRef(tagName: "a") {
-  return window.document.createElement(tagName);
 }

@@ -8,6 +8,7 @@ import type { ClientProfileId, RenderResult, RenderWarning, SignatureDocument } 
 interface RenderOptions {
   origin?: string;
   profileId?: ClientProfileId;
+  unlocked?: boolean;
 }
 
 export async function renderSignature(
@@ -19,13 +20,18 @@ export async function renderSignature(
   const profile = clientProfiles[options.profileId ?? document.targetProfileId];
   const template = getTemplateDefinition(document.templateId);
   const imageUrl = document.image ? resolveUrlForHtml(document.image.url, options.origin) : null;
+  const nameImageUrl = document.nameImage ? resolveUrlForHtml(document.nameImage.url, options.origin) : null;
 
   const canonicalHtml = renderToStaticMarkup(
     <div data-siggy-profile={profile.id} data-siggy-template={template.id}>
       {template.render(document, {
         accentColor: document.accentColor,
         imageUrl,
-        profileId: profile.id
+        nameImageUrl,
+        nameImageWidth: document.nameImage?.width ?? null,
+        nameImageHeight: document.nameImage?.height ?? null,
+        profileId: profile.id,
+        unlocked: options.unlocked ?? false
       })}
     </div>
   );

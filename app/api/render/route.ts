@@ -15,9 +15,15 @@ export async function POST(request: NextRequest) {
       ? (payload.profileId as ClientProfileId)
       : undefined;
 
+  const unlocked =
+    isRecord(payload) && typeof payload.unlocked === "boolean"
+      ? payload.unlocked
+      : false;
+
   const result = await renderSignature(document, {
     origin: request.nextUrl.origin,
-    profileId
+    profileId,
+    unlocked
   });
 
   return NextResponse.json(result);

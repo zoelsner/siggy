@@ -9,12 +9,10 @@ import type {
 } from "./types";
 
 const templateIds: TemplateId[] = [
-  "studio-split",
-  "mono-stack",
-  "accent-column",
-  "compact-row",
-  "executive-card",
-  "minimal-rail"
+  "edge",
+  "bold",
+  "card",
+  "clean"
 ];
 
 const clientProfileIds: ClientProfileId[] = [
@@ -42,8 +40,13 @@ export function coerceSignatureDocument(input: unknown): SignatureDocument {
     phone: normalizeText(record.phone, fallback.phone, 32),
     website: normalizeUrl(record.website, fallback.website),
     accentColor: normalizeHexColor(record.accentColor, fallback.accentColor),
+    fontFamily: typeof record.fontFamily === "string" ? record.fontFamily : fallback.fontFamily,
     image: normalizeImage(record.image),
+    nameImage: normalizeImage(record.nameImage),
     socials: normalizeSocials(record.socials),
+    cta: record.cta && typeof record.cta === "object"
+      ? { text: normalizeText((record.cta as Record<string, unknown>).text, "", 60), url: normalizeSafeUrl((record.cta as Record<string, unknown>).url) }
+      : null,
     meta: {
       updatedAt: normalizeTimestamp(meta.updatedAt, fallback.meta.updatedAt),
       draftName: normalizeText(meta.draftName, fallback.meta.draftName, 60)
@@ -125,6 +128,14 @@ function normalizeUrl(value: unknown, fallback: string): string {
     return raw;
   }
 
+  return raw;
+}
+
+function normalizeSafeUrl(value: unknown): string {
+  const raw = normalizeUrl(value, "");
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return "";
   return raw;
 }
 

@@ -10,7 +10,7 @@ const baseSocials: SocialLink[] = [
 export function createDefaultDocument(): SignatureDocument {
   return {
     version: 1,
-    templateId: "studio-split",
+    templateId: "edge",
     targetProfileId: "gmail_web",
     fullName: "Sarah Chen",
     jobTitle: "Head of Design",
@@ -19,8 +19,11 @@ export function createDefaultDocument(): SignatureDocument {
     phone: "+1 (415) 555-0142",
     website: "meridian.design",
     accentColor: "#4f46e5",
+    fontFamily: "dm-sans",
     image: null,
+    nameImage: null,
     socials: baseSocials,
+    cta: null,
     meta: {
       updatedAt: new Date().toISOString(),
       draftName: "Primary signature"

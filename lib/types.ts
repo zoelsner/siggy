@@ -1,12 +1,10 @@
 import type React from "react";
 
 export type TemplateId =
-  | "studio-split"
-  | "mono-stack"
-  | "accent-column"
-  | "compact-row"
-  | "executive-card"
-  | "minimal-rail";
+  | "edge"
+  | "bold"
+  | "card"
+  | "clean";
 
 export type ClientProfileId =
   | "gmail_web"
@@ -44,8 +42,14 @@ export interface SignatureDocument {
   phone: string;
   website: string;
   accentColor: string;
+  fontFamily: string;
   image: SignatureImageAsset | null;
+  nameImage: SignatureImageAsset | null;
   socials: SocialLink[];
+  cta: {
+    text: string;
+    url: string;
+  } | null;
   meta: {
     updatedAt: string;
     draftName: string;
@@ -86,7 +90,11 @@ export interface TemplateDefinition {
 export interface TemplateRenderContext {
   accentColor: string;
   imageUrl: string | null;
+  nameImageUrl: string | null;
+  nameImageWidth: number | null;
+  nameImageHeight: number | null;
   profileId: ClientProfileId;
+  unlocked: boolean;
 }
 
 export interface ClientProfile {

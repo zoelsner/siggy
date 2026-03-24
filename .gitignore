@@ -6,3 +6,5 @@ node_modules/
 screenshots/
 competitive-analysis.html
 coverage
+.vercel
+.env*.local
