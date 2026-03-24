@@ -201,12 +201,14 @@ export function StudioShell() {
   // Render name as image when name or font changes (debounced)
   useEffect(() => {
     if (isSystemFont(deferredDocument.fontFamily)) {
-      // System fonts don't need rendering — clear any existing name image
       if (deferredDocument.nameImage) {
         setDocument((current) => ({ ...current, nameImage: null }));
       }
       return;
     }
+
+    // Clear stale image immediately so text fallback shows the new color
+    setDocument((current) => current.nameImage ? ({ ...current, nameImage: null }) : current);
 
     const timer = setTimeout(async () => {
       setRenderingName(true);
@@ -344,29 +346,31 @@ export function StudioShell() {
   return (
     <main className="page-shell">
       <div className="topbar">
-        <div className="wordmark">
-          <div className="wordmark__badge">S</div>
-          <span className="wordmark__title">Siggy</span>
+        <div className="topbar__left">
+          <div className="wordmark">
+            <div className="wordmark__badge">S</div>
+            <span className="wordmark__title">Siggy</span>
+          </div>
+          <span className="topbar__divider" />
+          <span className="topbar__eyebrow">Email Signature Builder</span>
         </div>
-        {unlocked ? (
-          <button
-            className="button button--primary"
-            disabled={!renderResult || renderState === "rendering"}
-            onClick={handleCopy}
-            type="button"
-          >
-            {copyLabel}
-          </button>
-        ) : (
-          <a
-            className="button button--primary"
-            href={CHECKOUT_URL}
-          >
-            Get Siggy — $49
-          </a>
-        )}
+        <div className="topbar__right">
+          {unlocked ? (
+            <button
+              className="button button--primary"
+              disabled={!renderResult || renderState === "rendering"}
+              onClick={handleCopy}
+              type="button"
+            >
+              {copyLabel}
+            </button>
+          ) : (
+            <a className="button button--primary" href={CHECKOUT_URL}>
+              Get Siggy — $49
+            </a>
+          )}
+        </div>
       </div>
-
       <section className="studio-grid">
         <aside className="sidebar">
           <div>

@@ -1,22 +1,22 @@
 :root {
-  --bg: #141414;
-  --bg-elevated: #1c1c1c;
-  --bg-card: #242424;
-  --surface: rgba(255, 255, 255, 0.06);
-  --surface-hover: rgba(255, 255, 255, 0.1);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --text: #f0ede8;
-  --text-dim: #a8a29e;
-  --text-soft: #6b6560;
-  --accent: #5148D8;
-  --accent-soft: rgba(81, 72, 216, 0.15);
-  --shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  --bg: #f4f0eb;
+  --bg-elevated: #ffffff;
+  --bg-card: #ffffff;
+  --surface: rgba(20, 20, 20, 0.04);
+  --surface-hover: rgba(20, 20, 20, 0.07);
+  --border: rgba(20, 20, 20, 0.10);
+  --border-strong: rgba(20, 20, 20, 0.18);
+  --text: #1d1b19;
+  --text-dim: #655f58;
+  --text-soft: #9a938c;
+  --accent: #4f46e5;
+  --accent-soft: rgba(79, 70, 229, 0.10);
+  --shadow: 0 16px 48px rgba(38, 29, 20, 0.08);
 
-  --thumb-strong: rgba(255, 255, 255, 0.45);
-  --thumb-muted: rgba(255, 255, 255, 0.15);
-  --thumb-accent: rgba(81, 72, 216, 0.3);
-  --thumb-bar: rgba(81, 72, 216, 0.6);
+  --thumb-strong: rgba(20, 20, 20, 0.50);
+  --thumb-muted: rgba(20, 20, 20, 0.12);
+  --thumb-accent: rgba(79, 70, 229, 0.25);
+  --thumb-bar: rgba(79, 70, 229, 0.55);
 }
 
 * {
@@ -45,46 +45,22 @@ select {
   font: inherit;
 }
 
-/* ---- Hero ---- */
+/* ---- Site banner ---- */
 
-.hero {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 48px 32px 28px;
+.site-banner {
+  background: #1d1b19;
+  color: #f4f0eb;
+  padding: 10px 32px;
+  font-size: 13px;
+  font-weight: 600;
   text-align: center;
+  letter-spacing: 0.01em;
 }
 
-.hero__eyebrow {
-  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--text-soft);
-  display: block;
-  margin-bottom: 12px;
-}
-
-.hero__headline {
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-  color: var(--text);
-  margin: 0 auto;
-  max-width: 520px;
-}
-
-.hero__headline em {
-  font-style: normal;
-  color: var(--text-soft);
-}
-
-.hero__desc {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text-dim);
-  margin: 10px auto 0;
-  max-width: 420px;
+.site-banner a {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* ---- Page shell ---- */
@@ -93,6 +69,7 @@ select {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 32px 64px;
+  padding-top: 12px;
 }
 
 /* ---- Topbar ---- */
@@ -101,9 +78,33 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-  padding: 0;
+  padding: 0 0 16px;
+}
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar__divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-strong);
+}
+
+.topbar__eyebrow {
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-soft);
 }
 
 .wordmark {
@@ -264,7 +265,7 @@ select {
 .font-option--active {
   background: var(--accent-soft);
   color: var(--text);
-  border-color: rgba(81, 72, 216, 0.3);
+  border-color: rgba(79, 70, 229, 0.22);
 }
 
 /* ---- Swatches ---- */
@@ -319,7 +320,7 @@ select {
 }
 
 .button--primary:hover {
-  background: #ffffff;
+  background: #2d2a24;
 }
 
 .button--primary:disabled {
@@ -350,6 +351,11 @@ select {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.main-area__action {
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* ---- Preview ---- */
@@ -497,10 +503,6 @@ select {
 /* ---- Responsive ---- */
 
 @media (max-width: 860px) {
-  .hero {
-    padding: 32px 16px 20px;
-  }
-
   .page-shell {
     padding-inline: 16px;
   }
@@ -529,12 +531,24 @@ select {
   }
 
   .topbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .topbar__eyebrow {
+    display: none;
+  }
+
+  .topbar__divider {
+    display: none;
   }
 
   .sidebar__row {
     grid-template-columns: 1fr;
+  }
+
+  .site-banner {
+    padding: 10px 16px;
+    font-size: 12px;
   }
 }
