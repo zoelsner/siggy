@@ -464,6 +464,63 @@ export function StudioShell() {
             />
           </div>
 
+          <div className="sidebar__row">
+            {document.socials.map((social, index) => (
+              <div className="field" key={social.id}>
+                <label htmlFor={`social-${social.platform}`}>{social.platform}</label>
+                <input
+                  id={`social-${social.platform}`}
+                  onChange={(event) =>
+                    updateDocument((current) => ({
+                      ...current,
+                      socials: current.socials.map((entry, entryIndex) =>
+                        entryIndex === index
+                          ? {
+                              ...entry,
+                              url: event.target.value
+                            }
+                          : entry
+                      )
+                    }))
+                  }
+                  placeholder={`username`}
+                  value={social.url}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="sidebar__row">
+            <div className="field">
+              <label htmlFor="ctaText">CTA Label</label>
+              <input
+                id="ctaText"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    cta: { text: event.target.value, url: current.cta?.url ?? "" }
+                  }))
+                }
+                placeholder="Book a call"
+                value={document.cta?.text ?? ""}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="ctaUrl">CTA Link</label>
+              <input
+                id="ctaUrl"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    cta: { text: current.cta?.text ?? "", url: event.target.value }
+                  }))
+                }
+                placeholder="calendly.com/you"
+                value={document.cta?.url ?? ""}
+              />
+            </div>
+          </div>
+
           <div className="sidebar__divider" />
 
           <div className="field">
@@ -532,63 +589,6 @@ export function StudioShell() {
                 Remove image
               </button>
             ) : null}
-          </div>
-
-          <div className="sidebar__divider" />
-
-          {document.socials.map((social, index) => (
-            <div className="field" key={social.id}>
-              <label htmlFor={`social-${social.platform}`}>{social.platform}</label>
-              <input
-                id={`social-${social.platform}`}
-                onChange={(event) =>
-                  updateDocument((current) => ({
-                    ...current,
-                    socials: current.socials.map((entry, entryIndex) =>
-                      entryIndex === index
-                        ? {
-                            ...entry,
-                            url: event.target.value
-                          }
-                        : entry
-                    )
-                  }))
-                }
-                placeholder={`${social.platform.toLowerCase()}.com/username`}
-                value={social.url}
-              />
-            </div>
-          ))}
-
-          <div className="sidebar__divider" />
-
-          <div className="field">
-            <label htmlFor="ctaText">CTA Label</label>
-            <input
-              id="ctaText"
-              onChange={(event) =>
-                updateDocument((current) => ({
-                  ...current,
-                  cta: { text: event.target.value, url: current.cta?.url ?? "" }
-                }))
-              }
-              placeholder="Book a call"
-              value={document.cta?.text ?? ""}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="ctaUrl">CTA Link</label>
-            <input
-              id="ctaUrl"
-              onChange={(event) =>
-                updateDocument((current) => ({
-                  ...current,
-                  cta: { text: current.cta?.text ?? "", url: event.target.value }
-                }))
-              }
-              placeholder="https://calendly.com/you"
-              value={document.cta?.url ?? ""}
-            />
           </div>
         </aside>
 
