@@ -369,10 +369,10 @@ select {
 
 .preview-frame {
   width: 100%;
-  min-height: 300px;
   border: none;
   border-radius: 10px;
   background: white;
+  transition: height 150ms ease;
 }
 
 /* ---- Template strip ---- */

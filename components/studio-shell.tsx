@@ -14,7 +14,7 @@ import { createDefaultDocument } from "@/lib/default-document";
 import { touchDocument } from "@/lib/document";
 import { fontOptions, isSystemFont } from "@/lib/fonts";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
-import { templateDefinitions } from "@/lib/templates";
+import { getTemplateDefinition, templateDefinitions } from "@/lib/templates";
 import type { AssetUploadResponse, RenderResult, SignatureDocument } from "@/lib/types";
 
 import { InstallGuide } from "./install-guide";
@@ -31,7 +31,7 @@ const fontFamilyMap: Record<string, string> = {
 };
 
 function buildPreviewMarkup(html: string) {
-  return `<!DOCTYPE html><html lang="en"><body style="margin:0;padding:24px;background:#ffffff;">${html}</body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><style>html,body{margin:0;padding:0;background:#fff;}</style></head><body style="padding:24px;"><div id="sig">${html}</div><script>function resize(){var h=document.getElementById('sig');if(h){parent.postMessage({type:'siggy-resize',height:h.offsetHeight+48},'*');}}resize();new MutationObserver(resize).observe(document.body,{childList:true,subtree:true});window.addEventListener('load',resize);</script></body></html>`;
 }
 
 function TemplateThumbnail({ templateId }: { templateId: string }) {
@@ -103,6 +103,7 @@ const CHECKOUT_URL = "https://siggy.lemonsqueezy.com/buy/TODO";
 
 function useUnlocked() {
   const [unlocked, setUnlocked] = useState(false);
+  const [resolved, setResolved] = useState(false);
 
   useEffect(() => {
     // Check URL params for purchase redirect
@@ -115,13 +116,14 @@ function useUnlocked() {
       window.history.replaceState({}, "", window.location.pathname);
     }
     setUnlocked(!!localStorage.getItem("siggy_key"));
+    setResolved(true);
   }, []);
 
-  return unlocked;
+  return { unlocked, resolved };
 }
 
 export function StudioShell() {
-  const unlocked = useUnlocked();
+  const { unlocked, resolved } = useUnlocked();
   const [document, setDocument] = useState<SignatureDocument>(() => createDefaultDocument());
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [renderState, setRenderState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
@@ -132,6 +134,7 @@ export function StudioShell() {
   const [imageStatus, setImageStatus] = useState<string | null>(null);
   const [isUploading, setUploading] = useState(false);
   const [isRenderingName, setRenderingName] = useState(false);
+  const [previewHeight, setPreviewHeight] = useState(200);
   const adapterRef = useRef(createBrowserDraftAdapter());
   const hasTrackedInputRef = useRef(false);
   const deferredDocument = useDeferredValue(document);
@@ -146,6 +149,14 @@ export function StudioShell() {
       publicSupport: "gmail_web",
       auth: "deferred"
     });
+
+    function handleMessage(e: MessageEvent) {
+      if (e.data?.type === "siggy-resize" && typeof e.data.height === "number") {
+        setPreviewHeight(Math.max(120, e.data.height));
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   useEffect(() => {
@@ -355,7 +366,7 @@ export function StudioShell() {
           <span className="topbar__eyebrow">Email Signature Builder</span>
         </div>
         <div className="topbar__right">
-          {unlocked ? (
+          {!resolved ? null : unlocked ? (
             <button
               className="button button--primary"
               disabled={!renderResult || renderState === "rendering"}
@@ -427,6 +438,8 @@ export function StudioShell() {
               <label htmlFor="email">Email</label>
               <input
                 id="email"
+                type="email"
+                placeholder="you@company.com"
                 onChange={(event) =>
                   updateDocument((current) => ({
                     ...current,
@@ -440,6 +453,8 @@ export function StudioShell() {
               <label htmlFor="phone">Phone</label>
               <input
                 id="phone"
+                type="tel"
+                placeholder="+1 (555) 000-0000"
                 onChange={(event) =>
                   updateDocument((current) => ({
                     ...current,
@@ -454,6 +469,8 @@ export function StudioShell() {
             <label htmlFor="website">Website</label>
             <input
               id="website"
+              type="url"
+              placeholder="yoursite.com"
               onChange={(event) =>
                 updateDocument((current) => ({
                   ...current,
@@ -569,33 +586,40 @@ export function StudioShell() {
             </div>
           </div>
 
-          <div className="field">
-            <label htmlFor="imageUpload">Headshot</label>
-            <input id="imageUpload" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} type="file" />
-            <div className="helper-text">
-              {isUploading ? "Processing..." : imageStatus ?? "Optional. Resized to 128px."}
+          {getTemplateDefinition(document.templateId).supportsImage ? (
+            <div className="field">
+              <label htmlFor="imageUpload">Headshot</label>
+              <input id="imageUpload" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} type="file" />
+              <div className="helper-text">
+                {isUploading ? "Processing..." : imageStatus ?? "Optional. Resized to 128px."}
+              </div>
+              {document.image ? (
+                <button
+                  className="button button--subtle button--small"
+                  onClick={() =>
+                    updateDocument((current) => ({
+                      ...current,
+                      image: null
+                    }))
+                  }
+                  type="button"
+                >
+                  Remove image
+                </button>
+              ) : null}
             </div>
-            {document.image ? (
-              <button
-                className="button button--subtle button--small"
-                onClick={() =>
-                  updateDocument((current) => ({
-                    ...current,
-                    image: null
-                  }))
-                }
-                type="button"
-              >
-                Remove image
-              </button>
-            ) : null}
-          </div>
+          ) : null}
         </aside>
 
         <div className="main-area">
           <div className="preview-card">
             {renderResult ? (
-              <iframe className="preview-frame" srcDoc={previewMarkup} title="Siggy preview" />
+              <iframe
+                className="preview-frame"
+                srcDoc={previewMarkup}
+                style={{ height: previewHeight }}
+                title="Siggy preview"
+              />
             ) : renderState === "error" ? (
               <div className="error-state">{renderError}</div>
             ) : (
@@ -619,7 +643,7 @@ export function StudioShell() {
                     );
                   });
                 }}
-                title={template.name}
+                title={`${template.name} — ${template.description}`}
                 type="button"
               >
                 <TemplateThumbnail templateId={template.id} />
@@ -627,8 +651,6 @@ export function StudioShell() {
               </button>
             ))}
           </div>
-
-          {renderError ? <div className="error-state">{renderError}</div> : null}
 
           <InstallGuide
             isConfirmed={installConfirmed}

@@ -65,7 +65,7 @@ function ctaButton(doc: SignatureDocument, accentColor: string) {
 function watermark() {
   return (
     <div style={{ marginTop: "16px", fontSize: "10px", color: "#c4b5fd" }}>
-      <a href="https://siggy-orpin.vercel.app" style={{ color: "#94a3b8", textDecoration: "none" }}>
+      <a href="https://siggy.app" style={{ color: "#94a3b8", textDecoration: "none" }}>
         Made with Siggy
       </a>
     </div>
