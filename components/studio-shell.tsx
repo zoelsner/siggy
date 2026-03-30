@@ -660,6 +660,9 @@ export function StudioShell() {
           />
         </div>
       </section>
+      <footer className="site-footer">
+        <a href="/terms">Terms &amp; Conditions</a>
+      </footer>
     </main>
   );
 }
