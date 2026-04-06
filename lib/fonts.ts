@@ -22,6 +22,15 @@ export function isSystemFont(id: string): boolean {
   return getFontOption(id).system === true;
 }
 
+export const fontFamilyMap: Record<string, string> = {
+  "dm-sans": "'DM Sans', sans-serif",
+  "montserrat": "'Montserrat', sans-serif",
+  "plus-jakarta": "'Plus Jakarta Sans', sans-serif",
+  "unbounded": "'Unbounded', sans-serif",
+  "georgia": "Georgia, 'Times New Roman', serif",
+  "arial": "Arial, 'Segoe UI', 'Helvetica Neue', Helvetica, sans-serif",
+};
+
 // Module-level cache for font buffers
 const fontCache = new Map<string, ArrayBuffer>();
 

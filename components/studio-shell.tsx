@@ -12,26 +12,20 @@ import {
 import { trackEvent } from "@/lib/analytics";
 import { createDefaultDocument } from "@/lib/default-document";
 import { touchDocument } from "@/lib/document";
-import { fontOptions, isSystemFont } from "@/lib/fonts";
+import { fontFamilyMap, fontOptions, isSystemFont } from "@/lib/fonts";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
 import { getTemplateDefinition, templateDefinitions } from "@/lib/templates";
 import type { AssetUploadResponse, RenderResult, SignatureDocument } from "@/lib/types";
 
+import { CHECKOUT_URL, useUnlocked } from "@/lib/constants";
 import { InstallGuide } from "./install-guide";
 
 const accentChoices = ["#4f46e5", "#0f9f68", "#cb7a12", "#d74545", "#2563eb", "#111827"];
 
-const fontFamilyMap: Record<string, string> = {
-  "dm-sans": "'DM Sans', sans-serif",
-  "montserrat": "'Montserrat', sans-serif",
-  "plus-jakarta": "'Plus Jakarta Sans', sans-serif",
-  "unbounded": "'Unbounded', sans-serif",
-  "georgia": "Georgia, serif",
-  "arial": "Arial, sans-serif",
-};
+const GOOGLE_FONTS_CSS = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;800;900&family=Montserrat:wght@400;700;800;900&family=Plus+Jakarta+Sans:wght@400;700;800&family=Unbounded:wght@400;700;800;900&display=swap";
 
 function buildPreviewMarkup(html: string) {
-  return `<!DOCTYPE html><html lang="en"><head><style>html,body{margin:0;padding:0;background:#fff;}</style></head><body style="padding:24px;"><div id="sig">${html}</div><script>function resize(){var h=document.getElementById('sig');if(h){parent.postMessage({type:'siggy-resize',height:h.offsetHeight+48},'*');}}resize();new MutationObserver(resize).observe(document.body,{childList:true,subtree:true});window.addEventListener('load',resize);</script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><link rel="stylesheet" href="${GOOGLE_FONTS_CSS}"><style>html,body{margin:0;padding:0;background:#fff;}</style></head><body style="padding:24px;"><div id="sig">${html}</div><script>function resize(){var h=document.getElementById('sig');if(h){parent.postMessage({type:'siggy-resize',height:h.offsetHeight+48},'*');}}resize();new MutationObserver(resize).observe(document.body,{childList:true,subtree:true});window.addEventListener('load',resize);</script></body></html>`;
 }
 
 function TemplateThumbnail({ templateId }: { templateId: string }) {
@@ -98,42 +92,18 @@ function TemplateThumbnail({ templateId }: { templateId: string }) {
   }
 }
 
-// Update with your real LemonSqueezy product URL after creating the product
-const CHECKOUT_URL = "https://siggy.lemonsqueezy.com/buy/TODO";
-
-function useUnlocked() {
-  const [unlocked, setUnlocked] = useState(false);
-  const [resolved, setResolved] = useState(false);
-
-  useEffect(() => {
-    // Check URL params for purchase redirect
-    const params = new URLSearchParams(window.location.search);
-    // LemonSqueezy redirect params: {order_id}, {order_uuid}, {checkout_hash}
-    const key = params.get("order_id") || params.get("checkout_hash") || params.get("key");
-    if (key) {
-      localStorage.setItem("siggy_key", key);
-      // Clean URL
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-    setUnlocked(!!localStorage.getItem("siggy_key"));
-    setResolved(true);
-  }, []);
-
-  return { unlocked, resolved };
-}
-
 export function StudioShell() {
   const { unlocked, resolved } = useUnlocked();
   const [document, setDocument] = useState<SignatureDocument>(() => createDefaultDocument());
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [renderState, setRenderState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
   const [renderError, setRenderError] = useState<string | null>(null);
-  const [copyLabel, setCopyLabel] = useState("Copy HTML");
+  const [copyLabel, setCopyLabel] = useState("Copy Signature HTML");
+  const [isCopying, setIsCopying] = useState(false);
   const [isInstallOpen, setInstallOpen] = useState(false);
   const [installConfirmed, setInstallConfirmed] = useState(false);
   const [imageStatus, setImageStatus] = useState<string | null>(null);
   const [isUploading, setUploading] = useState(false);
-  const [isRenderingName, setRenderingName] = useState(false);
   const [previewHeight, setPreviewHeight] = useState(200);
   const adapterRef = useRef(createBrowserDraftAdapter());
   const hasTrackedInputRef = useRef(false);
@@ -142,7 +112,8 @@ export function StudioShell() {
   useEffect(() => {
     const stored = adapterRef.current.load();
     if (stored) {
-      setDocument(stored);
+      // Clear any stale nameImage — preview uses text with web fonts, images generated at copy time
+      setDocument({ ...stored, nameImage: null });
     }
 
     trackEvent("landing_viewed", {
@@ -209,52 +180,6 @@ export function StudioShell() {
     return () => controller.abort();
   }, [deferredDocument, unlocked]);
 
-  // Render name as image when name or font changes (debounced)
-  useEffect(() => {
-    if (isSystemFont(deferredDocument.fontFamily)) {
-      if (deferredDocument.nameImage) {
-        setDocument((current) => ({ ...current, nameImage: null }));
-      }
-      return;
-    }
-
-    // Clear stale image immediately so text fallback shows the new color
-    setDocument((current) => current.nameImage ? ({ ...current, nameImage: null }) : current);
-
-    const timer = setTimeout(async () => {
-      setRenderingName(true);
-      try {
-        const response = await fetch("/api/render-name", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: deferredDocument.fullName,
-            fontFamily: deferredDocument.fontFamily,
-            accentColor: deferredDocument.accentColor,
-            weight: 700,
-          }),
-        });
-
-        if (!response.ok) {
-          console.error("Name render failed:", response.status, await response.text());
-          return;
-        }
-
-        const payload = (await response.json()) as AssetUploadResponse;
-        setDocument((current) => ({
-          ...current,
-          nameImage: payload.asset,
-        }));
-      } catch {
-        // Silently fail — text fallback will be used
-      } finally {
-        setRenderingName(false);
-      }
-    }, 600); // debounce 600ms
-
-    return () => clearTimeout(timer);
-  }, [deferredDocument.fullName, deferredDocument.fontFamily, deferredDocument.accentColor]);
-
   function updateDocument(mutator: (current: SignatureDocument) => SignatureDocument) {
     setDocument((current) => {
       const next = touchDocument(mutator(current));
@@ -270,25 +195,64 @@ export function StudioShell() {
     });
   }
 
-  function handleCopy() {
-    if (!renderResult) {
+  async function handleCopy() {
+    if (!renderResult || isCopying) {
       return;
     }
 
-    navigator.clipboard
-      .writeText(renderResult.html)
-      .then(() => {
-        setCopyLabel("Copied!");
-        setInstallOpen(true);
-        trackEvent("copy_clicked", {
-          charCount: renderResult.sizeBudget.charCount
+    setIsCopying(true);
+    setCopyLabel("Preparing...");
+
+    try {
+      // For custom fonts, generate name image for email client compatibility
+      let copyDoc = document;
+      if (!isSystemFont(document.fontFamily)) {
+        const nameRes = await fetch("/api/render-name", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: document.fullName,
+            fontFamily: document.fontFamily,
+            accentColor: document.accentColor,
+            weight: 700,
+          }),
         });
-        window.setTimeout(() => setCopyLabel("Copy HTML"), 1600);
-      })
-      .catch(() => {
-        setCopyLabel("Copy failed");
-        window.setTimeout(() => setCopyLabel("Copy HTML"), 1800);
+        if (nameRes.ok) {
+          const payload = (await nameRes.json()) as AssetUploadResponse;
+          copyDoc = { ...document, nameImage: payload.asset };
+        }
+      }
+
+      // Re-render with the name image baked in
+      const renderRes = await fetch("/api/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          document: copyDoc,
+          profileId: document.targetProfileId,
+          unlocked,
+        }),
       });
+
+      if (!renderRes.ok) {
+        throw new Error("Render failed");
+      }
+
+      const result = (await renderRes.json()) as RenderResult;
+      await navigator.clipboard.writeText(result.html);
+
+      setCopyLabel("Copied!");
+      setInstallOpen(true);
+      trackEvent("copy_clicked", {
+        charCount: result.sizeBudget.charCount,
+      });
+      window.setTimeout(() => setCopyLabel("Copy Signature HTML"), 1600);
+    } catch {
+      setCopyLabel("Copy failed");
+      window.setTimeout(() => setCopyLabel("Copy Signature HTML"), 1800);
+    } finally {
+      setIsCopying(false);
+    }
   }
 
   async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -358,10 +322,10 @@ export function StudioShell() {
     <main className="page-shell">
       <div className="topbar">
         <div className="topbar__left">
-          <div className="wordmark">
+          <a href="/" className="wordmark">
             <div className="wordmark__badge">S</div>
             <span className="wordmark__title">Siggy</span>
-          </div>
+          </a>
           <span className="topbar__divider" />
           <span className="topbar__eyebrow">Email Signature Builder</span>
         </div>
@@ -369,7 +333,7 @@ export function StudioShell() {
           {!resolved ? null : unlocked ? (
             <button
               className="button button--primary"
-              disabled={!renderResult || renderState === "rendering"}
+              disabled={!renderResult || renderState === "rendering" || isCopying}
               onClick={handleCopy}
               type="button"
             >
@@ -377,19 +341,64 @@ export function StudioShell() {
             </button>
           ) : (
             <a className="button button--primary" href={CHECKOUT_URL}>
-              Get Siggy — $49
+              Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
             </a>
           )}
         </div>
       </div>
+
+      {/* Style toolbar — font + color */}
+      <div className="style-toolbar">
+        <div className="style-toolbar__group">
+          <span className="style-toolbar__label">Font</span>
+          <div className="style-toolbar__fonts">
+            {fontOptions.map((font) => (
+              <button
+                key={font.id}
+                className={`font-option ${document.fontFamily === font.id ? "font-option--active" : ""}`}
+                onClick={() =>
+                  updateDocument((current) => ({
+                    ...current,
+                    fontFamily: font.id,
+                  }))
+                }
+                style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
+                type="button"
+              >
+                {font.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <span className="style-toolbar__divider" />
+        <div className="style-toolbar__group">
+          <span className="style-toolbar__label">Color</span>
+          <div className="swatch-row">
+            {accentChoices.map((choice) => (
+              <button
+                key={choice}
+                aria-label={`Use ${choice}`}
+                className={`swatch ${document.accentColor === choice ? "swatch--active" : ""}`}
+                onClick={() =>
+                  updateDocument((current) => ({
+                    ...current,
+                    accentColor: choice
+                  }))
+                }
+                style={{ backgroundColor: choice }}
+                type="button"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
       <section className="studio-grid">
+        {/* Compact sidebar — identity + contact only */}
         <aside className="sidebar">
           <div>
-            <h2 className="sidebar__heading">Signature Editor</h2>
-            <div className="sidebar__sub">The editorial utility</div>
+            <h2 className="sidebar__heading">Details</h2>
           </div>
-
-          <div className="sidebar__divider" />
 
           <div className="field">
             <label htmlFor="fullName">Name</label>
@@ -480,135 +489,6 @@ export function StudioShell() {
               value={document.website}
             />
           </div>
-
-          <div className="sidebar__row">
-            {document.socials.map((social, index) => (
-              <div className="field" key={social.id}>
-                <label htmlFor={`social-${social.platform}`}>{social.platform}</label>
-                <input
-                  id={`social-${social.platform}`}
-                  onChange={(event) =>
-                    updateDocument((current) => ({
-                      ...current,
-                      socials: current.socials.map((entry, entryIndex) =>
-                        entryIndex === index
-                          ? {
-                              ...entry,
-                              url: event.target.value
-                            }
-                          : entry
-                      )
-                    }))
-                  }
-                  placeholder={`username`}
-                  value={social.url}
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="sidebar__row">
-            <div className="field">
-              <label htmlFor="ctaText">CTA Label</label>
-              <input
-                id="ctaText"
-                onChange={(event) =>
-                  updateDocument((current) => ({
-                    ...current,
-                    cta: { text: event.target.value, url: current.cta?.url ?? "" }
-                  }))
-                }
-                placeholder="Book a call"
-                value={document.cta?.text ?? ""}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="ctaUrl">CTA Link</label>
-              <input
-                id="ctaUrl"
-                onChange={(event) =>
-                  updateDocument((current) => ({
-                    ...current,
-                    cta: { text: current.cta?.text ?? "", url: event.target.value }
-                  }))
-                }
-                placeholder="calendly.com/you"
-                value={document.cta?.url ?? ""}
-              />
-            </div>
-          </div>
-
-          <div className="sidebar__divider" />
-
-          <div className="field">
-            <label>Font</label>
-            <div className="font-picker">
-              {fontOptions.map((font) => (
-                <button
-                  key={font.id}
-                  className={`font-option ${document.fontFamily === font.id ? "font-option--active" : ""}`}
-                  onClick={() =>
-                    updateDocument((current) => ({
-                      ...current,
-                      fontFamily: font.id,
-                    }))
-                  }
-                  style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
-                  type="button"
-                >
-                  {font.name}
-                </button>
-              ))}
-            </div>
-            {isRenderingName ? (
-              <div className="helper-text">Rendering name...</div>
-            ) : null}
-          </div>
-
-          <div className="field">
-            <label>Accent color</label>
-            <div className="swatch-row">
-              {accentChoices.map((choice) => (
-                <button
-                  key={choice}
-                  aria-label={`Use ${choice}`}
-                  className={`swatch ${document.accentColor === choice ? "swatch--active" : ""}`}
-                  onClick={() =>
-                    updateDocument((current) => ({
-                      ...current,
-                      accentColor: choice
-                    }))
-                  }
-                  style={{ backgroundColor: choice }}
-                  type="button"
-                />
-              ))}
-            </div>
-          </div>
-
-          {getTemplateDefinition(document.templateId).supportsImage ? (
-            <div className="field">
-              <label htmlFor="imageUpload">Headshot</label>
-              <input id="imageUpload" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} type="file" />
-              <div className="helper-text">
-                {isUploading ? "Processing..." : imageStatus ?? "Optional. Resized to 128px."}
-              </div>
-              {document.image ? (
-                <button
-                  className="button button--subtle button--small"
-                  onClick={() =>
-                    updateDocument((current) => ({
-                      ...current,
-                      image: null
-                    }))
-                  }
-                  type="button"
-                >
-                  Remove image
-                </button>
-              ) : null}
-            </div>
-          ) : null}
         </aside>
 
         <div className="main-area">
@@ -660,6 +540,93 @@ export function StudioShell() {
           />
         </div>
       </section>
+
+      {/* Secondary fields — links/socials + headshot */}
+      <div className="secondary-fields">
+        <div className="secondary-card">
+          <h3 className="secondary-card__heading">Links & Socials</h3>
+          <div className="secondary-card__grid">
+            {document.socials.map((social, index) => (
+              <div className="field" key={social.id}>
+                <label htmlFor={`social-${social.platform}`}>{social.platform}</label>
+                <input
+                  id={`social-${social.platform}`}
+                  onChange={(event) =>
+                    updateDocument((current) => ({
+                      ...current,
+                      socials: current.socials.map((entry, entryIndex) =>
+                        entryIndex === index
+                          ? {
+                              ...entry,
+                              url: event.target.value
+                            }
+                          : entry
+                      )
+                    }))
+                  }
+                  placeholder="username"
+                  value={social.url}
+                />
+              </div>
+            ))}
+            <div className="field">
+              <label htmlFor="ctaText">CTA Label</label>
+              <input
+                id="ctaText"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    cta: { text: event.target.value, url: current.cta?.url ?? "" }
+                  }))
+                }
+                placeholder="Book a call"
+                value={document.cta?.text ?? ""}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="ctaUrl">CTA Link</label>
+              <input
+                id="ctaUrl"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    cta: { text: current.cta?.text ?? "", url: event.target.value }
+                  }))
+                }
+                placeholder="calendly.com/you"
+                value={document.cta?.url ?? ""}
+              />
+            </div>
+          </div>
+        </div>
+
+        {getTemplateDefinition(document.templateId).supportsImage ? (
+          <div className="secondary-card">
+            <h3 className="secondary-card__heading">Headshot</h3>
+            <div className="field">
+              <input id="imageUpload" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} type="file" />
+              <div className="helper-text">
+                {isUploading ? "Processing..." : imageStatus ?? "Optional. Resized to 128px."}
+              </div>
+              {document.image ? (
+                <button
+                  className="button button--subtle button--small"
+                  onClick={() =>
+                    updateDocument((current) => ({
+                      ...current,
+                      image: null
+                    }))
+                  }
+                  type="button"
+                >
+                  Remove image
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
       <footer className="site-footer">
         <a href="/terms">Terms &amp; Conditions</a>
       </footer>

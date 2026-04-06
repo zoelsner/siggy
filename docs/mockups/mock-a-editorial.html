@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Siggy — Mock A: Editorial Dark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Geist+Mono&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #0e0e0e; color: #f0ede8; min-height: 100vh; }
+
+  /* Nav */
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .nav-left { display: flex; align-items: center; gap: 32px; }
+  .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
+  .logo span { color: #6157ff; }
+  .nav-links { display: flex; gap: 24px; font-size: 14px; color: #6b6560; }
+  .nav-links a { color: inherit; text-decoration: none; }
+  .nav-links a.active { color: #f0ede8; border-bottom: 1px solid #f0ede8; padding-bottom: 2px; }
+  .btn-copy { background: #f0ede8; color: #0e0e0e; border: none; border-radius: 999px; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+  /* Layout */
+  .editor { display: grid; grid-template-columns: 300px 1fr; gap: 0; min-height: calc(100vh - 57px); }
+
+  /* Sidebar */
+  .sidebar { border-right: 1px solid rgba(255,255,255,0.06); padding: 28px 24px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+  .sidebar-header h2 { font-size: 16px; font-weight: 700; }
+  .sidebar-header p { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #6b6560; margin-top: 4px; }
+  .divider { height: 1px; background: rgba(255,255,255,0.06); }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #6b6560; }
+  .field input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px; color: #f0ede8; font-size: 14px; font-family: inherit; outline: none; }
+  .field input:focus { border-color: #6157ff; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .swatches { display: flex; gap: 8px; }
+  .swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+  .swatch.active { box-shadow: 0 0 0 2px #0e0e0e, 0 0 0 4px #f0ede8; }
+  .fonts { display: flex; flex-direction: column; gap: 2px; }
+  .font-btn { text-align: left; background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 7px 10px; color: #6b6560; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .font-btn:hover { background: rgba(255,255,255,0.04); color: #f0ede8; }
+  .font-btn.active { background: rgba(97,87,255,0.12); color: #f0ede8; border-color: rgba(97,87,255,0.3); }
+
+  /* Main */
+  .main { padding: 32px 40px; display: flex; flex-direction: column; gap: 20px; }
+  .main-header { display: flex; justify-content: space-between; align-items: center; }
+  .main-header .label { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #6b6560; }
+
+  /* Preview */
+  .preview-container { background: #1a1a1a; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); padding: 32px; flex: 1; display: flex; align-items: center; justify-content: center; }
+  .preview-inner { background: #ffffff; border-radius: 12px; padding: 32px; width: 100%; max-width: 580px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+
+  /* Signature inside preview */
+  .sig { font-family: Arial, sans-serif; color: #0f172a; }
+  .sig-edge { display: flex; gap: 0; }
+  .sig-bar { width: 5px; background: #6157ff; border-radius: 3px; flex-shrink: 0; }
+  .sig-content { padding-left: 20px; }
+  .sig-top { display: flex; gap: 16px; align-items: flex-start; }
+  .sig-avatar { width: 72px; height: 72px; border-radius: 50%; background: #6157ff; color: #fff; font-size: 24px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sig-info { }
+  .sig-name { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #0f172a; }
+  .sig-role { margin-top: 4px; font-size: 13px; color: #475569; }
+  .sig-pill { display: inline-block; background: #6157ff; color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-right: 8px; }
+  .sig-contacts { margin-top: 14px; font-size: 13px; color: #475569; line-height: 24px; }
+  .sig-contacts .icon { color: #94a3b8; margin-right: 8px; }
+  .sig-contacts a { color: #6157ff; text-decoration: none; }
+  .sig-socials { margin-top: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .sig-socials a { color: #6157ff; text-decoration: none; margin-right: 12px; }
+
+  /* Template strip */
+  .template-strip { display: flex; gap: 6px; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 8px; }
+  .tmpl { flex: 1; border: none; border-radius: 10px; background: transparent; padding: 10px 4px 8px; cursor: pointer; text-align: center; }
+  .tmpl:hover { background: rgba(255,255,255,0.04); }
+  .tmpl.active { background: rgba(255,255,255,0.06); box-shadow: 0 0 0 1.5px #6b6560; }
+  .tmpl-icon { height: 28px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+  .tmpl-label { font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: #6b6560; }
+  .tmpl.active .tmpl-label { color: #f0ede8; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-left">
+    <div class="logo"><span>S</span>iggy</div>
+    <div class="nav-links">
+      <a href="#" class="active">Editor</a>
+      <a href="#">Templates</a>
+      <a href="#">Styles</a>
+    </div>
+  </div>
+  <button class="btn-copy">Copy HTML</button>
+</nav>
+
+<div class="editor">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Signature Editor</h2>
+      <p>The editorial utility</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>Name</label>
+      <input value="Alexander Sterling" />
+    </div>
+    <div class="field">
+      <label>Job Title</label>
+      <input value="Principal Product Designer" />
+    </div>
+    <div class="field">
+      <label>Company</label>
+      <input value="Linear Systems" />
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row">
+      <div class="field">
+        <label>Email</label>
+        <input value="alex@linear.app" />
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input value="+1 (555) 000-1234" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Website</label>
+      <input value="linear.app" />
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>Font</label>
+      <div class="fonts">
+        <button class="font-btn active" style="font-family:'DM Sans',sans-serif">DM Sans</button>
+        <button class="font-btn" style="font-family:'Montserrat',sans-serif">Montserrat</button>
+        <button class="font-btn" style="font-family:'Unbounded',sans-serif">Unbounded</button>
+        <button class="font-btn" style="font-family:Georgia,serif">Georgia</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Accent Color</label>
+      <div class="swatches">
+        <div class="swatch active" style="background:#6157ff"></div>
+        <div class="swatch" style="background:#0a0a0a"></div>
+        <div class="swatch" style="background:#e85d2a"></div>
+        <div class="swatch" style="background:#00c2b8"></div>
+        <div class="swatch" style="background:#22c55e"></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="main-header">
+      <span class="label">Live Preview</span>
+    </div>
+
+    <div class="preview-container">
+      <div class="preview-inner">
+        <div class="sig">
+          <div class="sig-edge">
+            <div class="sig-bar"></div>
+            <div class="sig-content">
+              <div class="sig-top">
+                <div class="sig-avatar">AS</div>
+                <div class="sig-info">
+                  <div class="sig-name">Alexander Sterling</div>
+                  <div class="sig-role">
+                    <span class="sig-pill">Principal</span>
+                    Product Designer at Linear Systems
+                  </div>
+                  <div class="sig-contacts">
+                    <div><span class="icon">✉</span><a href="#">alex@linear.app</a></div>
+                    <div><span class="icon">☏</span>+1 (555) 000-1234</div>
+                    <div><span class="icon">⊕</span><a href="#">linear.app</a></div>
+                  </div>
+                  <div class="sig-socials">
+                    <a href="#">LinkedIn</a>
+                    <a href="#">GitHub</a>
+                    <a href="#">X</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="template-strip">
+      <div class="tmpl active">
+        <div class="tmpl-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="3" height="14" rx="1.5" fill="#6157ff"/><rect x="8" y="5" width="10" height="2" rx="1" fill="#6b6560"/><rect x="8" y="9" width="7" height="2" rx="1" fill="#3a3632"/><rect x="8" y="13" width="9" height="2" rx="1" fill="#3a3632"/></svg>
+        </div>
+        <div class="tmpl-label">Edge</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="6" cy="10" r="4" fill="#3a3632"/><rect x="12" y="7" width="6" height="2" rx="1" fill="#6b6560"/><rect x="12" y="11" width="5" height="2" rx="1" fill="#3a3632"/></svg>
+        </div>
+        <div class="tmpl-label">Pill</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="3" rx="1" fill="#6b6560"/><rect x="2" y="8" width="16" height="3" rx="1" fill="#6157ff"/><rect x="2" y="13" width="7" height="2" rx="1" fill="#3a3632"/><rect x="11" y="13" width="7" height="2" rx="1" fill="#3a3632"/></svg>
+        </div>
+        <div class="tmpl-label">Bold</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="#3a3632" stroke-width="1.5" fill="none"/><rect x="3" y="4" width="5" height="12" rx="1" fill="rgba(255,255,255,0.03)"/><rect x="10" y="6" width="6" height="2" rx="1" fill="#6b6560"/><rect x="10" y="10" width="5" height="2" rx="1" fill="#3a3632"/></svg>
+        </div>
+        <div class="tmpl-label">Card</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="6" height="2" rx="1" fill="#6b6560"/><rect x="2" y="9" width="5" height="2" rx="1" fill="#3a3632"/><rect x="10" y="5" width="6" height="2" rx="1" fill="#6b6560"/><rect x="10" y="9" width="5" height="2" rx="1" fill="#3a3632"/><rect x="2" y="13" width="6" height="2" rx="1" fill="#6b6560"/><rect x="10" y="13" width="5" height="2" rx="1" fill="#3a3632"/></svg>
+        </div>
+        <div class="tmpl-label">Grid</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="7" width="8" height="2" rx="1" fill="#6b6560"/><rect x="2" y="11" width="12" height="2" rx="1" fill="#3a3632"/></svg>
+        </div>
+        <div class="tmpl-label">Clean</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

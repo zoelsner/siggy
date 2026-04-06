@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Siggy — Mock B: Warm Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Geist+Mono&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #faf8f5; color: #1c1917; min-height: 100vh; }
+
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; }
+  .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.04em; }
+  .logo span { background: linear-gradient(135deg, #e85d2a, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  .nav-price { font-size: 13px; color: #78716c; }
+  .nav-price strong { color: #1c1917; }
+  .btn-cta { background: #1c1917; color: #faf8f5; border: none; border-radius: 999px; padding: 10px 24px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 48px 40px 40px; max-width: 640px; margin: 0 auto; }
+  .hero-badge { display: inline-block; font-family: 'Geist Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #a8a29e; border: 1px solid #e7e5e4; border-radius: 999px; padding: 4px 14px; margin-bottom: 16px; }
+  .hero h1 { font-size: 36px; font-weight: 800; letter-spacing: -0.04em; line-height: 1.1; }
+  .hero h1 em { font-style: normal; color: #a8a29e; }
+  .hero p { font-size: 15px; color: #78716c; margin-top: 12px; line-height: 1.6; max-width: 420px; margin-left: auto; margin-right: auto; }
+
+  /* Editor */
+  .editor { max-width: 1200px; margin: 0 auto; padding: 0 40px 64px; display: grid; grid-template-columns: 320px 1fr; gap: 28px; }
+
+  /* Sidebar */
+  .sidebar { background: #fff; border-radius: 20px; border: 1px solid #f0eeeb; padding: 28px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 4px 24px rgba(0,0,0,0.03); }
+  .sidebar h3 { font-size: 15px; font-weight: 700; }
+  .divider { height: 1px; background: #f0eeeb; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #a8a29e; }
+  .field input { background: #faf8f5; border: 1px solid #e7e5e4; border-radius: 12px; padding: 11px 14px; color: #1c1917; font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.15s; }
+  .field input:focus { border-color: #e85d2a; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .swatches { display: flex; gap: 10px; }
+  .swatch { width: 32px; height: 32px; border-radius: 50%; border: 2.5px solid transparent; cursor: pointer; transition: transform 0.15s; }
+  .swatch:hover { transform: scale(1.1); }
+  .swatch.active { box-shadow: 0 0 0 2.5px #faf8f5, 0 0 0 5px #1c1917; }
+
+  /* Main */
+  .main { display: flex; flex-direction: column; gap: 20px; }
+  .preview-label { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #a8a29e; }
+
+  /* Preview Card */
+  .preview-card { background: #fff; border-radius: 20px; border: 1px solid #f0eeeb; padding: 40px; box-shadow: 0 8px 40px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: center; min-height: 340px; }
+  .preview-inner { width: 100%; max-width: 520px; }
+
+  /* Bold Signature */
+  .sig-bold { font-family: Arial, sans-serif; }
+  .sig-bold-name { font-size: 40px; font-weight: 900; letter-spacing: -0.04em; line-height: 1; text-transform: uppercase; }
+  .sig-bold-name .first { color: #1c1917; }
+  .sig-bold-name .last { color: #e85d2a; }
+  .sig-bold-bar { height: 3px; background: #e85d2a; width: 100%; border-radius: 2px; margin: 14px 0 16px; }
+  .sig-bold-bottom { display: flex; gap: 28px; }
+  .sig-bold-left { }
+  .sig-bold-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #1c1917; }
+  .sig-bold-company { font-size: 13px; color: #78716c; margin-top: 2px; }
+  .sig-bold-socials { margin-top: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .sig-bold-socials a { color: #e85d2a; text-decoration: none; margin-right: 12px; }
+  .sig-bold-right { border-left: 1px solid #e7e5e4; padding-left: 28px; font-size: 13px; color: #78716c; line-height: 24px; }
+  .sig-bold-right .icon { color: #d6d3d1; margin-right: 8px; }
+  .sig-bold-right a { color: #e85d2a; text-decoration: none; }
+
+  /* Template strip */
+  .template-strip { display: flex; gap: 8px; }
+  .tmpl { flex: 1; background: #fff; border: 1px solid #f0eeeb; border-radius: 14px; padding: 12px 4px 10px; cursor: pointer; text-align: center; transition: border-color 0.15s, box-shadow 0.15s; }
+  .tmpl:hover { border-color: #d6d3d1; }
+  .tmpl.active { border-color: #1c1917; box-shadow: 0 0 0 1px #1c1917; }
+  .tmpl-icon { height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+  .tmpl-label { font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: #a8a29e; }
+  .tmpl.active .tmpl-label { color: #1c1917; }
+
+  /* CTA bar */
+  .cta-bar { background: #1c1917; border-radius: 16px; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; color: #faf8f5; }
+  .cta-bar p { font-size: 14px; color: #a8a29e; }
+  .cta-bar strong { color: #faf8f5; }
+  .btn-cta-light { background: #faf8f5; color: #1c1917; border: none; border-radius: 999px; padding: 10px 24px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="logo"><span>Sig</span>gy</div>
+  <div class="nav-right">
+    <span class="nav-price"><strong>$49</strong> lifetime</span>
+    <button class="btn-cta">Get Siggy</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge">Email Signature Builder</div>
+  <h1>Stop sending emails with a default signature. <em>Make it yours.</em></h1>
+  <p>Custom typography rendered as pixel-perfect images. Your name in DM Sans, Montserrat, or Unbounded — not Arial.</p>
+</section>
+
+<div class="editor">
+  <aside class="sidebar">
+    <h3>Your Signature</h3>
+    <div class="divider"></div>
+    <div class="field"><label>Name</label><input value="Alexander Sterling" /></div>
+    <div class="field"><label>Title</label><input value="Principal Creative Director" /></div>
+    <div class="field"><label>Company</label><input value="Vanguard Visuals & Strategy" /></div>
+    <div class="divider"></div>
+    <div class="row">
+      <div class="field"><label>Email</label><input value="a.sterling@vanguard.studio" /></div>
+      <div class="field"><label>Phone</label><input value="+1 (555) 890-4421" /></div>
+    </div>
+    <div class="field"><label>Website</label><input value="vanguard.studio" /></div>
+    <div class="divider"></div>
+    <div class="field">
+      <label>Accent Color</label>
+      <div class="swatches">
+        <div class="swatch" style="background:#6157ff"></div>
+        <div class="swatch active" style="background:#e85d2a"></div>
+        <div class="swatch" style="background:#0ea5e9"></div>
+        <div class="swatch" style="background:#22c55e"></div>
+        <div class="swatch" style="background:#1c1917"></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <span class="preview-label">Live Preview — Bold Template</span>
+
+    <div class="preview-card">
+      <div class="preview-inner">
+        <div class="sig-bold">
+          <div class="sig-bold-name">
+            <span class="first">Alexander</span><br>
+            <span class="last">Sterling</span>
+          </div>
+          <div class="sig-bold-bar"></div>
+          <div class="sig-bold-bottom">
+            <div class="sig-bold-left">
+              <div class="sig-bold-title">Principal Creative Director</div>
+              <div class="sig-bold-company">Vanguard Visuals & Strategy</div>
+              <div class="sig-bold-socials">
+                <a href="#">LinkedIn</a>
+                <a href="#">X</a>
+              </div>
+            </div>
+            <div class="sig-bold-right">
+              <div><span class="icon">☏</span>+1 (555) 890-4421</div>
+              <div><span class="icon">✉</span><a href="#">a.sterling@vanguard.studio</a></div>
+              <div><span class="icon">⊕</span><a href="#">vanguard.studio</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="template-strip">
+      <div class="tmpl">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="3" width="3" height="12" rx="1.5" fill="#e85d2a"/><rect x="6" y="5" width="10" height="2" rx="1" fill="#a8a29e"/><rect x="6" y="9" width="7" height="1.5" rx=".75" fill="#d6d3d1"/></svg></div>
+        <div class="tmpl-label">Edge</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="5" cy="9" r="4" fill="#d6d3d1"/><rect x="11" y="7" width="6" height="1.5" rx=".75" fill="#a8a29e"/><rect x="11" y="10" width="5" height="1.5" rx=".75" fill="#d6d3d1"/></svg></div>
+        <div class="tmpl-label">Pill</div>
+      </div>
+      <div class="tmpl active">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="3" width="16" height="3" rx="1" fill="#a8a29e"/><rect x="1" y="7" width="16" height="3" rx="1" fill="#e85d2a"/><rect x="1" y="12" width="7" height="1.5" rx=".75" fill="#d6d3d1"/><rect x="10" y="12" width="7" height="1.5" rx=".75" fill="#d6d3d1"/></svg></div>
+        <div class="tmpl-label">Bold</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="2" width="16" height="14" rx="2" stroke="#d6d3d1" stroke-width="1.2" fill="none"/><rect x="2" y="3" width="5" height="12" rx="1" fill="#f5f5f4"/></svg></div>
+        <div class="tmpl-label">Card</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="5" width="6" height="1.5" rx=".75" fill="#a8a29e"/><rect x="1" y="8" width="5" height="1.5" rx=".75" fill="#d6d3d1"/><rect x="9" y="5" width="6" height="1.5" rx=".75" fill="#a8a29e"/><rect x="9" y="8" width="5" height="1.5" rx=".75" fill="#d6d3d1"/></svg></div>
+        <div class="tmpl-label">Grid</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="7" width="8" height="1.5" rx=".75" fill="#a8a29e"/><rect x="1" y="10" width="12" height="1.5" rx=".75" fill="#d6d3d1"/></svg></div>
+        <div class="tmpl-label">Clean</div>
+      </div>
+    </div>
+
+    <div class="cta-bar">
+      <p>Your signature is ready. <strong>Get Siggy to copy the HTML.</strong></p>
+      <button class="btn-cta-light">Get Siggy — $49</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

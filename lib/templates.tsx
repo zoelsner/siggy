@@ -1,6 +1,7 @@
 import React from "react";
 
 import { getFilledSocials, resolveUrlForHtml } from "./document";
+import { fontFamilyMap } from "./fonts";
 import type { SignatureDocument, TemplateDefinition, TemplateId, TemplateRenderContext } from "./types";
 
 const dark = "#0f172a";
@@ -9,11 +10,16 @@ const light = "#94a3b8";
 const rule = "#e2e8f0";
 const font = "Arial, 'Segoe UI', 'Helvetica Neue', Helvetica, sans-serif";
 
+function resolveNameFontFamily(fontId: string): string | undefined {
+  return fontFamilyMap[fontId];
+}
+
 function nameImg(doc: SignatureDocument, ctx: TemplateRenderContext, fallbackStyle: React.CSSProperties) {
   if (ctx.nameImageUrl && ctx.nameImageWidth && ctx.nameImageHeight) {
     return <img alt={doc.fullName} src={ctx.nameImageUrl} width={ctx.nameImageWidth} height={ctx.nameImageHeight} style={{ display: "block" }} />;
   }
-  return <div style={{ ...fallbackStyle, color: ctx.accentColor }}>{doc.fullName}</div>;
+  const nameFontFamily = resolveNameFontFamily(doc.fontFamily);
+  return <div style={{ ...fallbackStyle, color: ctx.accentColor, ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>{doc.fullName}</div>;
 }
 
 function photo(url: string | null, doc: SignatureDocument, size = 72, round = "50%") {
@@ -73,9 +79,8 @@ function watermark() {
 }
 
 // ━━━ EDGE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Thick accent bar left, circular photo, pill badge, icon contacts
+// Thick accent bar left, circular photo, icon contacts
 function edge(doc: SignatureDocument, ctx: TemplateRenderContext) {
-  const firstWord = doc.jobTitle.split(" ")[0];
   return (
     <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark }}>
       <tbody>
@@ -91,9 +96,6 @@ function edge(doc: SignatureDocument, ctx: TemplateRenderContext) {
                   <td style={{ verticalAlign: "top" }}>
                     {nameImg(doc, ctx, { fontSize: "24px", fontWeight: 800, letterSpacing: "-0.02em", color: dark })}
                     <div style={{ marginTop: "4px", fontSize: "13px", color: mid }}>
-                      <span style={{ display: "inline-block", background: ctx.accentColor, color: "#fff", fontSize: "10px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" as const, padding: "2px 8px", borderRadius: "999px", marginRight: "8px" }}>
-                        {firstWord}
-                      </span>
                       {doc.jobTitle} at {doc.company}
                     </div>
                     <table cellPadding={0} cellSpacing={0} style={{ marginTop: "12px", borderCollapse: "collapse", fontFamily: font, fontSize: "13px", color: mid }}>
@@ -124,10 +126,11 @@ function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
   const firstName = parts.slice(0, -1).join(" ") || parts[0];
   const lastName = parts.length > 1 ? parts[parts.length - 1] : "";
 
+  const nameFontFamily = resolveNameFontFamily(doc.fontFamily);
   const nameElement = (ctx.nameImageUrl && ctx.nameImageWidth && ctx.nameImageHeight)
     ? <img alt={doc.fullName} src={ctx.nameImageUrl} width={ctx.nameImageWidth} height={ctx.nameImageHeight} style={{ display: "block" }} />
     : (
-      <div style={{ fontSize: "40px", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: "0.95", textTransform: "uppercase" as const }}>
+      <div style={{ fontSize: "40px", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: "0.95", textTransform: "uppercase" as const, ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
         <span style={{ color: dark }}>{firstName}</span>
         {lastName ? <><br /><span style={{ color: ctx.accentColor }}>{lastName}</span></> : null}
       </div>
@@ -172,8 +175,8 @@ function card(doc: SignatureDocument, ctx: TemplateRenderContext) {
     <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark, borderRadius: "12px", overflow: "hidden", border: `1px solid ${rule}` }}>
       <tbody>
         <tr>
-          <td style={{ background: "#f8fafc", padding: "20px", verticalAlign: "middle", textAlign: "center" as const, width: "120px" }}>
-            {photo(ctx.imageUrl, doc, 72, "16px")}
+          <td style={{ background: "#f8fafc", padding: "14px", verticalAlign: "middle", textAlign: "center" as const }}>
+            {photo(ctx.imageUrl, doc, 80, "12px")}
           </td>
           <td style={{ padding: "18px 20px", verticalAlign: "top" }}>
             {nameImg(doc, ctx, { fontSize: "20px", fontWeight: 700, letterSpacing: "-0.01em", color: dark })}
@@ -225,6 +228,13 @@ export const templateDefinitions: TemplateDefinition[] = [
   { id: "card", name: "Card", description: "Framed card with tinted photo panel.", headline: "Professional and contained.", supportsImage: true, render: card },
   { id: "clean", name: "Clean", description: "Pure text, zero decoration.", headline: "Minimal and portable.", supportsImage: false, render: clean },
 ];
+
+export function splitName(name: string) {
+  const parts = name.split(" ");
+  const first = parts.slice(0, -1).join(" ") || parts[0];
+  const last = parts.length > 1 ? parts[parts.length - 1] : "";
+  return { first, last };
+}
 
 export function getTemplateDefinition(id: TemplateId): TemplateDefinition {
   return templateDefinitions.find((t) => t.id === id) ?? templateDefinitions[0];

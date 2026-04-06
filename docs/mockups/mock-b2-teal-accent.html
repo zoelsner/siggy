@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Siggy — Mock B2: Teal Accent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Geist+Mono&family=Unbounded:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f7f7f5; color: #1c1917; min-height: 100vh; }
+
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 40px; background: #fff; border-bottom: 1px solid #eeecea; }
+  .nav-left { display: flex; align-items: center; gap: 28px; }
+  .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.04em; }
+  .logo-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0d9488; margin-left: 1px; vertical-align: baseline; }
+  .nav-links { display: flex; gap: 4px; }
+  .nav-link { font-size: 13px; font-weight: 600; color: #a8a29e; text-decoration: none; padding: 6px 12px; border-radius: 8px; transition: all 0.15s; }
+  .nav-link:hover { color: #1c1917; background: #f5f5f4; }
+  .nav-link.active { color: #1c1917; background: #f0eeeb; }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .btn-ghost { background: none; border: 1px solid #e7e5e4; border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 600; color: #78716c; cursor: pointer; font-family: inherit; }
+  .btn-primary { background: #0d9488; color: #fff; border: none; border-radius: 999px; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 2px 8px rgba(13,148,136,0.25); }
+
+  .hero { text-align: center; padding: 44px 40px 36px; }
+  .hero-eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: #a8a29e; margin-bottom: 12px; }
+  .hero h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.15; max-width: 480px; margin: 0 auto; }
+  .hero h1 em { font-style: normal; color: #0d9488; }
+  .hero p { font-size: 15px; color: #78716c; margin-top: 10px; line-height: 1.6; max-width: 400px; margin-left: auto; margin-right: auto; }
+
+  .editor { max-width: 1140px; margin: 0 auto; padding: 0 40px 48px; display: grid; grid-template-columns: 300px 1fr; gap: 24px; }
+
+  .sidebar { background: #fff; border-radius: 18px; border: 1px solid #eeecea; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .sidebar-title { font-size: 14px; font-weight: 700; }
+  .sidebar-sub { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #a8a29e; margin-top: 2px; }
+  .divider { height: 1px; background: #f0eeeb; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #a8a29e; }
+  .field input { background: #faf9f7; border: 1px solid #e7e5e4; border-radius: 10px; padding: 10px 12px; color: #1c1917; font-size: 14px; font-family: inherit; outline: none; }
+  .field input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .swatches { display: flex; gap: 8px; }
+  .swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+  .swatch:hover { transform: scale(1.1); }
+  .swatch.active { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1c1917; }
+  .font-list { display: flex; flex-direction: column; gap: 2px; }
+  .font-btn { text-align: left; background: none; border: 1px solid transparent; border-radius: 8px; padding: 7px 10px; color: #a8a29e; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .font-btn:hover { background: #f5f5f4; color: #1c1917; }
+  .font-btn.active { background: rgba(13,148,136,0.08); color: #1c1917; border-color: rgba(13,148,136,0.2); }
+
+  .main { display: flex; flex-direction: column; gap: 16px; }
+  .preview-header { display: flex; justify-content: space-between; align-items: center; }
+  .preview-label { font-family: 'Geist Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #a8a29e; }
+  .preview-template-name { font-size: 13px; font-weight: 700; color: #1c1917; }
+
+  .preview-card { background: #fff; border-radius: 18px; border: 1px solid #eeecea; padding: 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: center; min-height: 320px; }
+  .preview-inner { width: 100%; max-width: 540px; }
+
+  /* Edge signature with teal */
+  .sig { font-family: Arial, sans-serif; color: #1c1917; }
+  .sig-edge { display: flex; }
+  .sig-bar { width: 5px; background: #0d9488; border-radius: 3px; flex-shrink: 0; margin-right: 20px; }
+  .sig-row { display: flex; gap: 16px; align-items: flex-start; }
+  .sig-avatar { width: 68px; height: 68px; border-radius: 50%; background: #0d9488; color: #fff; font-size: 22px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sig-name { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+  .sig-role { font-size: 13px; color: #57534e; margin-top: 4px; }
+  .sig-pill { display: inline-block; background: #0d9488; color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-right: 6px; }
+  .sig-contacts { margin-top: 12px; font-size: 13px; color: #57534e; line-height: 24px; }
+  .sig-contacts .icon { color: #a8a29e; margin-right: 8px; font-size: 14px; }
+  .sig-contacts a { color: #0d9488; text-decoration: none; }
+  .sig-socials { margin-top: 10px; }
+  .sig-socials a { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #0d9488; text-decoration: none; margin-right: 12px; }
+
+  .template-strip { display: flex; gap: 6px; }
+  .tmpl { flex: 1; background: #fff; border: 1px solid #eeecea; border-radius: 12px; padding: 10px 4px 8px; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .tmpl:hover { border-color: #d6d3d1; }
+  .tmpl.active { border-color: #1c1917; box-shadow: 0 0 0 1px #1c1917; }
+  .tmpl-icon { height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+  .tmpl-label { font-family: 'Geist Mono', monospace; font-size: 8px; letter-spacing: 0.06em; text-transform: uppercase; color: #a8a29e; }
+  .tmpl.active .tmpl-label { color: #1c1917; font-weight: 600; }
+
+  .cta-bar { background: linear-gradient(135deg, #0f766e, #0d9488); border-radius: 16px; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; color: #fff; }
+  .cta-bar p { font-size: 14px; opacity: 0.85; }
+  .cta-bar strong { opacity: 1; }
+  .btn-cta-white { background: #fff; color: #0d9488; border: none; border-radius: 999px; padding: 10px 24px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+  .testimonial { margin-top: 8px; text-align: center; font-size: 13px; color: #a8a29e; }
+  .testimonial strong { color: #57534e; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-left">
+    <div class="logo">Siggy<span class="logo-dot"></span></div>
+    <div class="nav-links">
+      <a href="#" class="nav-link active">Editor</a>
+      <a href="#" class="nav-link">Templates</a>
+      <a href="#" class="nav-link">Styles</a>
+    </div>
+  </div>
+  <div class="nav-right">
+    <button class="btn-ghost">Sign in</button>
+    <button class="btn-primary">Get Siggy — $49</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow">Email signature builder</div>
+  <h1>Your name in <em>your font.</em> One click to Gmail.</h1>
+  <p>Custom typography rendered as pixel-perfect images. Not Arial. Not default. Designed.</p>
+</section>
+
+<div class="editor">
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-title">Signature Editor</div>
+      <div class="sidebar-sub">The editorial utility</div>
+    </div>
+    <div class="divider"></div>
+    <div class="field"><label>Name</label><input value="Sarah Chen" /></div>
+    <div class="field"><label>Title</label><input value="Head of Design" /></div>
+    <div class="field"><label>Company</label><input value="Meridian Studio" /></div>
+    <div class="divider"></div>
+    <div class="row">
+      <div class="field"><label>Email</label><input value="sarah@meridian.design" /></div>
+      <div class="field"><label>Phone</label><input value="+1 (415) 555-0142" /></div>
+    </div>
+    <div class="field"><label>Website</label><input value="meridian.design" /></div>
+    <div class="divider"></div>
+    <div class="field">
+      <label>Font</label>
+      <div class="font-list">
+        <button class="font-btn" style="font-family:'Plus Jakarta Sans'">Plus Jakarta Sans</button>
+        <button class="font-btn active" style="font-family:'Unbounded'">Unbounded</button>
+        <button class="font-btn" style="font-family:Georgia,serif">Georgia</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Accent</label>
+      <div class="swatches">
+        <div class="swatch active" style="background:#0d9488"></div>
+        <div class="swatch" style="background:#6157ff"></div>
+        <div class="swatch" style="background:#e85d2a"></div>
+        <div class="swatch" style="background:#1c1917"></div>
+        <div class="swatch" style="background:#ec4899"></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="preview-header">
+      <span class="preview-label">Live Preview</span>
+      <span class="preview-template-name">Edge Template</span>
+    </div>
+
+    <div class="preview-card">
+      <div class="preview-inner">
+        <div class="sig">
+          <div class="sig-edge">
+            <div class="sig-bar"></div>
+            <div>
+              <div class="sig-row">
+                <div class="sig-avatar">SC</div>
+                <div>
+                  <div class="sig-name">Sarah Chen</div>
+                  <div class="sig-role"><span class="sig-pill">Head</span> of Design at Meridian Studio</div>
+                  <div class="sig-contacts">
+                    <div><span class="icon">✉</span><a href="#">sarah@meridian.design</a></div>
+                    <div><span class="icon">☏</span>+1 (415) 555-0142</div>
+                    <div><span class="icon">⊕</span><a href="#">meridian.design</a></div>
+                  </div>
+                  <div class="sig-socials">
+                    <a href="#">LinkedIn</a>
+                    <a href="#">X</a>
+                    <a href="#">GitHub</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="template-strip">
+      <div class="tmpl active">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="3" width="3" height="12" rx="1.5" fill="#0d9488"/><rect x="6" y="5" width="10" height="2" rx="1" fill="#a8a29e"/><rect x="6" y="9" width="7" height="1.5" rx=".75" fill="#d6d3d1"/></svg></div>
+        <div class="tmpl-label">Edge</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="5" cy="9" r="4" fill="#d6d3d1"/><rect x="11" y="7" width="6" height="1.5" rx=".75" fill="#a8a29e"/><rect x="11" y="10" width="5" height="1.5" rx=".75" fill="#d6d3d1"/></svg></div>
+        <div class="tmpl-label">Pill</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="3" width="16" height="3" rx="1" fill="#a8a29e"/><rect x="1" y="7" width="16" height="3" rx="1" fill="#0d9488"/><rect x="1" y="12" width="7" height="1.5" rx=".75" fill="#d6d3d1"/><rect x="10" y="12" width="7" height="1.5" rx=".75" fill="#d6d3d1"/></svg></div>
+        <div class="tmpl-label">Bold</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="2" width="16" height="14" rx="2" stroke="#d6d3d1" stroke-width="1.2" fill="none"/><rect x="2" y="3" width="5" height="12" rx="1" fill="#f5f5f4"/></svg></div>
+        <div class="tmpl-label">Card</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="5" width="6" height="1.5" rx=".75" fill="#a8a29e"/><rect x="1" y="8" width="5" height="1.5" rx=".75" fill="#d6d3d1"/><rect x="9" y="5" width="6" height="1.5" rx=".75" fill="#a8a29e"/><rect x="9" y="8" width="5" height="1.5" rx=".75" fill="#d6d3d1"/></svg></div>
+        <div class="tmpl-label">Grid</div>
+      </div>
+      <div class="tmpl">
+        <div class="tmpl-icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="7" width="8" height="1.5" rx=".75" fill="#a8a29e"/><rect x="1" y="10" width="12" height="1.5" rx=".75" fill="#d6d3d1"/></svg></div>
+        <div class="tmpl-label">Clean</div>
+      </div>
+    </div>
+
+    <div class="cta-bar">
+      <p>Your signature is ready. <strong>Copy the HTML to use it in Gmail.</strong></p>
+      <button class="btn-cta-white">Get Siggy — $49</button>
+    </div>
+
+    <div class="testimonial">"I got compliments on my email signature for the first time ever." — <strong>@danielfrost</strong></div>
+  </div>
+</div>
+
+</body>
+</html>
