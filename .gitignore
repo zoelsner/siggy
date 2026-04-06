@@ -8,3 +8,11 @@ competitive-analysis.html
 coverage
 .vercel
 .env*.local
+.DS_Store
+.mcp.json
+.superpowers/
+tsconfig.tsbuildinfo
+mockups.html
+mockups-all.png
+mockups/
+siggy-*.png
