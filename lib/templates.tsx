@@ -70,8 +70,8 @@ function ctaButton(doc: SignatureDocument, accentColor: string) {
 
 function watermark() {
   return (
-    <div style={{ marginTop: "16px", fontSize: "10px", color: "#c4b5fd" }}>
-      <a href="https://siggy.app" style={{ color: "#94a3b8", textDecoration: "none" }}>
+    <div style={{ marginTop: "16px", fontSize: "12px" }}>
+      <a href="https://siggy.app" style={{ color: "#64748b", textDecoration: "none", fontWeight: 600 }}>
         Made with Siggy
       </a>
     </div>
