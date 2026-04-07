@@ -172,7 +172,7 @@ function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
 // Bordered frame, tinted photo panel left, clean details right
 function card(doc: SignatureDocument, ctx: TemplateRenderContext) {
   return (
-    <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark, borderRadius: "12px", overflow: "hidden", border: `1px solid ${rule}` }}>
+    <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark, borderRadius: "12px", overflow: "hidden", border: "1px solid #cbd5e1" }}>
       <tbody>
         <tr>
           <td style={{ background: "#f8fafc", padding: "14px", verticalAlign: "middle", textAlign: "center" as const }}>
