@@ -1,9 +1,11 @@
 "use client";
 
-import { CHECKOUT_URL, useUnlocked } from "@/lib/constants";
+import { LicenseInput } from "@/components/license-input";
+import { openCheckout } from "@/lib/checkout-overlay";
+import { useUnlocked } from "@/lib/constants";
 
 export function Pricing() {
-  const { unlocked, resolved } = useUnlocked();
+  const { unlocked, resolved, unlock } = useUnlocked();
 
   const features = [
     "4 editorial-quality templates",
@@ -29,18 +31,17 @@ export function Pricing() {
             <li key={feature}>{feature}</li>
           ))}
         </ul>
-        {!resolved ? (
-          <a className="button button--primary button--large pricing-card__cta" href={CHECKOUT_URL}>
-            Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
-          </a>
-        ) : unlocked ? (
+        {!resolved ? null : unlocked ? (
           <a className="button button--primary button--large pricing-card__cta" href="/editor">
             Open Editor
           </a>
         ) : (
-          <a className="button button--primary button--large pricing-card__cta" href={CHECKOUT_URL}>
-            Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
-          </a>
+          <>
+            <button className="button button--primary button--large pricing-card__cta" onClick={() => openCheckout(unlock)} type="button">
+              Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
+            </button>
+            <LicenseInput onUnlock={unlock} />
+          </>
         )}
       </div>
     </section>

@@ -23,7 +23,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <script src="https://app.lemonsqueezy.com/js/lemon.js" defer />
+      </body>
     </html>
   );
 }

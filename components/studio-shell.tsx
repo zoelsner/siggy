@@ -17,8 +17,10 @@ import { createBrowserDraftAdapter } from "@/lib/persistence";
 import { getTemplateDefinition, templateDefinitions } from "@/lib/templates";
 import type { AssetUploadResponse, RenderResult, SignatureDocument } from "@/lib/types";
 
-import { CHECKOUT_URL, useUnlocked } from "@/lib/constants";
+import { openCheckout } from "@/lib/checkout-overlay";
+import { useUnlocked } from "@/lib/constants";
 import { InstallGuide } from "./install-guide";
+import { LicenseInput } from "./license-input";
 
 const accentChoices = ["#4f46e5", "#0f9f68", "#cb7a12", "#d74545", "#2563eb", "#111827"];
 
@@ -93,7 +95,7 @@ function TemplateThumbnail({ templateId }: { templateId: string }) {
 }
 
 export function StudioShell() {
-  const { unlocked, resolved } = useUnlocked();
+  const { unlocked, resolved, unlock } = useUnlocked();
   const [document, setDocument] = useState<SignatureDocument>(() => createDefaultDocument());
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [renderState, setRenderState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
@@ -340,9 +342,12 @@ export function StudioShell() {
               {copyLabel}
             </button>
           ) : (
-            <a className="button button--primary" href={CHECKOUT_URL}>
-              Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
-            </a>
+            <>
+              <LicenseInput onUnlock={unlock} />
+              <button className="button button--primary" onClick={() => openCheckout(unlock)} type="button">
+                Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
+              </button>
+            </>
           )}
         </div>
       </div>

@@ -1,9 +1,11 @@
 "use client";
 
-import { CHECKOUT_URL, useUnlocked } from "@/lib/constants";
+import { LicenseInput } from "@/components/license-input";
+import { openCheckout } from "@/lib/checkout-overlay";
+import { useUnlocked } from "@/lib/constants";
 
 export function Hero() {
-  const { unlocked, resolved } = useUnlocked();
+  const { unlocked, resolved, unlock } = useUnlocked();
 
   return (
     <section className="hero">
@@ -20,15 +22,16 @@ export function Hero() {
             Open Editor
           </a>
         ) : (
-          <a className="button button--primary button--large" href={CHECKOUT_URL}>
-            Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
-          </a>
+          <>
+            <button className="button button--primary button--large" onClick={() => openCheckout(unlock)} type="button">
+              Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
+            </button>
+            <a className="button button--large" href="/editor">
+              Try the editor free
+            </a>
+            <LicenseInput onUnlock={unlock} />
+          </>
         )}
-        {resolved && !unlocked ? (
-          <a className="button button--large" href="/editor">
-            Try the editor free
-          </a>
-        ) : null}
       </div>
       <p className="hero__subtext">One-time payment. Lifetime access. No subscription.</p>
     </section>

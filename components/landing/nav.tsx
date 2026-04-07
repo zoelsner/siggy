@@ -1,9 +1,10 @@
 "use client";
 
-import { CHECKOUT_URL, useUnlocked } from "@/lib/constants";
+import { openCheckout } from "@/lib/checkout-overlay";
+import { useUnlocked } from "@/lib/constants";
 
 export function LandingNav() {
-  const { unlocked, resolved } = useUnlocked();
+  const { unlocked, resolved, unlock } = useUnlocked();
 
   return (
     <nav className="landing-nav">
@@ -19,9 +20,9 @@ export function LandingNav() {
             Open Editor
           </a>
         ) : (
-          <a className="button button--primary" href={CHECKOUT_URL}>
+          <button className="button button--primary" onClick={() => openCheckout(unlock)} type="button">
             Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
-          </a>
+          </button>
         )}
       </div>
     </nav>
