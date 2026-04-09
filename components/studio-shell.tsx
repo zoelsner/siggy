@@ -332,23 +332,14 @@ export function StudioShell() {
           <span className="topbar__eyebrow">Email Signature Builder</span>
         </div>
         <div className="topbar__right">
-          {!resolved ? null : unlocked ? (
-            <button
-              className="button button--primary"
-              disabled={!renderResult || renderState === "rendering" || isCopying}
-              onClick={handleCopy}
-              type="button"
-            >
-              {copyLabel}
-            </button>
-          ) : (
-            <>
-              <LicenseInput onUnlock={unlock} />
-              <button className="button button--primary" onClick={() => openCheckout(unlock)} type="button">
-                Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
-              </button>
-            </>
-          )}
+          <button
+            className="button button--primary"
+            disabled={!renderResult || renderState === "rendering" || isCopying}
+            onClick={handleCopy}
+            type="button"
+          >
+            {copyLabel}
+          </button>
         </div>
       </div>
 
