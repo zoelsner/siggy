@@ -241,7 +241,11 @@ export function StudioShell() {
       }
 
       const result = (await renderRes.json()) as RenderResult;
-      await navigator.clipboard.writeText(result.html);
+      const htmlBlob = new Blob([result.html], { type: "text/html" });
+      const textBlob = new Blob([result.html], { type: "text/plain" });
+      await navigator.clipboard.write([
+        new ClipboardItem({ "text/html": htmlBlob, "text/plain": textBlob }),
+      ]);
 
       setCopyLabel("Copied!");
       setInstallOpen(true);
