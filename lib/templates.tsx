@@ -36,11 +36,11 @@ function socials(doc: SignatureDocument, color: string) {
   const filled = getFilledSocials(doc);
   if (!filled.length) return null;
   return (
-    <div style={{ marginTop: "10px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" as const }}>
+    <div style={{ marginTop: "10px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em" }}>
       {filled.map((s, i) => (
         <React.Fragment key={s.id}>
           {i > 0 ? <span style={{ color: light, margin: "0 6px" }}>·</span> : null}
-          <a href={resolveUrlForHtml(s.url)} style={{ color, textDecoration: "none" }}>{s.platform}</a>
+          <a href={resolveUrlForHtml(s.url)} style={{ color, textDecoration: "none" }}>{s.platform.toUpperCase()}</a>
         </React.Fragment>
       ))}
     </div>
@@ -57,11 +57,10 @@ function ctaButton(doc: SignatureDocument, accentColor: string) {
         padding: "8px 18px",
         fontSize: "12px",
         fontWeight: 700,
-        textTransform: "uppercase" as const,
         letterSpacing: "0.04em",
       }}>
         <a href={doc.cta.url} style={{ color: "#ffffff", textDecoration: "none" }}>
-          {doc.cta.text}
+          {doc.cta.text.toUpperCase()}
         </a>
       </td></tr></tbody>
     </table>
@@ -130,9 +129,9 @@ function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
   const nameElement = (ctx.nameImageUrl && ctx.nameImageWidth && ctx.nameImageHeight)
     ? <img alt={doc.fullName} src={ctx.nameImageUrl} width={ctx.nameImageWidth} height={ctx.nameImageHeight} style={{ display: "block" }} />
     : (
-      <div style={{ fontSize: "40px", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: "0.95", textTransform: "uppercase" as const, ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
-        <span style={{ color: dark }}>{firstName}</span>
-        {lastName ? <><br /><span style={{ color: ctx.accentColor }}>{lastName}</span></> : null}
+      <div style={{ fontSize: "40px", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: "0.95", ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
+        <span style={{ color: dark }}>{firstName.toUpperCase()}</span>
+        {lastName ? <><br /><span style={{ color: ctx.accentColor }}>{lastName.toUpperCase()}</span></> : null}
       </div>
     );
 
@@ -147,7 +146,7 @@ function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
         </tr>
         <tr>
           <td style={{ verticalAlign: "top", paddingTop: "14px", paddingRight: "24px" }}>
-            <div style={{ fontSize: "12px", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: dark }}>{doc.jobTitle}</div>
+            <div style={{ fontSize: "12px", fontWeight: 800, letterSpacing: "0.06em", color: dark }}>{doc.jobTitle.toUpperCase()}</div>
             <div style={{ fontSize: "13px", color: mid, marginTop: "2px" }}>{doc.company}</div>
             {socials(doc, ctx.accentColor)}
             {ctaButton(doc, ctx.accentColor)}
