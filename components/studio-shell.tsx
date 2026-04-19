@@ -22,7 +22,15 @@ import { useUnlocked } from "@/lib/constants";
 import { InstallGuide } from "./install-guide";
 import { LicenseInput } from "./license-input";
 
-const accentChoices = ["#4f46e5", "#0f9f68", "#cb7a12", "#d74545", "#2563eb", "#111827"];
+const accentChoices = [
+  "#17161A", // Ink        — universal
+  "#1e3a8a", // Navy       — professional
+  "#9f1239", // Burgundy   — professional
+  "#4f46e5", // Indigo     — bridge (default)
+  "#0d9488", // Teal       — bridge
+  "#059669", // Emerald    — creator
+  "#ea580c", // Sunset     — creator
+];
 
 const GOOGLE_FONTS_CSS = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;800;900&family=Montserrat:wght@400;700;800;900&family=Plus+Jakarta+Sans:wght@400;700;800&family=Unbounded:wght@400;700;800;900&display=swap";
 
