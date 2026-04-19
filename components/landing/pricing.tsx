@@ -22,7 +22,7 @@ export function Pricing() {
         <div className="pricing-card__header">
           <span className="pricing-card__label">Lifetime deal</span>
           <div className="pricing-card__price">
-            <span className="pricing-card__amount">$49</span>
+            <span className="pricing-card__amount">$19</span>
             <span className="pricing-card__term">one-time</span>
           </div>
         </div>
@@ -38,7 +38,7 @@ export function Pricing() {
         ) : (
           <>
             <button className="button button--primary button--large pricing-card__cta" onClick={() => openCheckout(unlock)} type="button">
-              Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
+              Unlock Siggy — $19
             </button>
             <LicenseInput onUnlock={unlock} />
           </>

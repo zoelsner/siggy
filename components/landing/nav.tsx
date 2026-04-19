@@ -21,7 +21,7 @@ export function LandingNav() {
           </a>
         ) : (
           <button className="button button--primary" onClick={() => openCheckout(unlock)} type="button">
-            Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
+            Unlock Siggy — $19
           </button>
         )}
       </div>

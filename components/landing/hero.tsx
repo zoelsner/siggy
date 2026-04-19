@@ -24,7 +24,7 @@ export function Hero() {
         ) : (
           <>
             <button className="button button--primary button--large" onClick={() => openCheckout(unlock)} type="button">
-              Unlock Siggy — $49 <span className="button__strikethrough">$79</span>
+              Unlock Siggy — $19
             </button>
             <a className="button button--large" href="/editor">
               Try the editor free

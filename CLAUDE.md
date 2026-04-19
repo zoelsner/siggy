@@ -46,7 +46,7 @@ lib/
 
 ## Payment / Unlock Flow
 
-- **Lemon Squeezy** for payments. Product: $49 LTD with license keys (unlimited length, 5 activations).
+- **Lemon Squeezy** for payments. Product: $19 LTD with license keys (unlimited length, 5 activations).
 - **Currently in test mode** — no real charges. Test card: `4242 4242 4242 4242`
 - Checkout opens as overlay via lemon.js → on success, `/api/activate-order` looks up license key → `/api/verify-license` validates it
 - Returning users: license key cached in localStorage (`siggy_license`), re-verified against LS API every session
