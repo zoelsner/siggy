@@ -4,8 +4,24 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Siggy",
-  description: "Gmail-first email signature builder with an Outlook-ready render pipeline."
+  metadataBase: new URL("https://siggy-orpin.vercel.app"),
+  title: "Siggy — Email signatures that don't look like Arial 11pt",
+  description:
+    "An email signature builder that makes you look sharp in every inbox. $19, own it forever, no subscription.",
+  openGraph: {
+    title: "Siggy — Email signatures that don't look like Arial 11pt",
+    description:
+      "Pick a template, customize your details, copy the HTML. $19, own it forever, no subscription.",
+    url: "/",
+    siteName: "Siggy",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Siggy — Email signatures that don't look like Arial 11pt",
+    description:
+      "Pick a template, customize your details, copy the HTML. $19, own it forever, no subscription.",
+  },
 };
 
 export default function RootLayout({
