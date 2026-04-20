@@ -8,22 +8,22 @@ export function Pricing() {
   const { unlocked, resolved, unlock } = useUnlocked();
 
   const features = [
+    "Own it forever — no subscription",
     "4 editorial-quality templates",
     "Custom fonts rendered as images",
     "Headshot upload & resize",
     "Social icons & CTA button",
     "Gmail, Outlook & Apple Mail ready",
-    "Lifetime access — no subscription",
   ];
 
   return (
     <section className="pricing-section" id="pricing">
       <div className="pricing-card">
         <div className="pricing-card__header">
-          <span className="pricing-card__label">Lifetime deal</span>
+          <span className="pricing-card__label">Own it forever</span>
           <div className="pricing-card__price">
             <span className="pricing-card__amount">$19</span>
-            <span className="pricing-card__term">one-time</span>
+            <span className="pricing-card__term">one-time · no subscription</span>
           </div>
         </div>
         <ul className="pricing-card__features">
