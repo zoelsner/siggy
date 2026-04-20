@@ -23,7 +23,6 @@ import { InstallGuide } from "./install-guide";
 import { LicenseInput } from "./license-input";
 
 const accentChoices = [
-  "#17161A", // Ink        — universal
   "#1e3a8a", // Navy       — professional
   "#9f1239", // Burgundy   — professional
   "#4f46e5", // Indigo     — bridge (default)
