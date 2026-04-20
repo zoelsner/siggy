@@ -1,6 +1,7 @@
 "use client";
 
 import { LicenseInput } from "@/components/license-input";
+import { trackEvent } from "@/lib/analytics";
 import { openCheckout } from "@/lib/checkout-overlay";
 import { useUnlocked } from "@/lib/constants";
 
@@ -37,7 +38,14 @@ export function Pricing() {
           </a>
         ) : (
           <>
-            <button className="button button--primary button--large pricing-card__cta" onClick={() => openCheckout(unlock)} type="button">
+            <button
+              className="button button--primary button--large pricing-card__cta"
+              onClick={() => {
+                trackEvent("unlock_click", { source: "pricing" });
+                openCheckout(unlock);
+              }}
+              type="button"
+            >
               Unlock Siggy — $19
             </button>
             <LicenseInput onUnlock={unlock} />

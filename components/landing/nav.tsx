@@ -1,5 +1,6 @@
 "use client";
 
+import { trackEvent } from "@/lib/analytics";
 import { openCheckout } from "@/lib/checkout-overlay";
 import { useUnlocked } from "@/lib/constants";
 
@@ -20,7 +21,14 @@ export function LandingNav() {
             Open Editor
           </a>
         ) : (
-          <button className="button button--primary" onClick={() => openCheckout(unlock)} type="button">
+          <button
+            className="button button--primary"
+            onClick={() => {
+              trackEvent("unlock_click", { source: "nav" });
+              openCheckout(unlock);
+            }}
+            type="button"
+          >
             Unlock Siggy — $19
           </button>
         )}

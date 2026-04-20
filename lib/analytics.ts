@@ -1,3 +1,5 @@
+import { track } from "@vercel/analytics";
+
 import type { AnalyticsEvent } from "./types";
 
 const SESSION_KEY = "siggy:session-id";
@@ -22,6 +24,14 @@ export function trackEvent(event: string, context?: AnalyticsEvent["context"]) {
     return;
   }
 
+  // Forward to Vercel Analytics (primary — goes to Vercel dashboard)
+  if (context) {
+    track(event, context);
+  } else {
+    track(event);
+  }
+
+  // Also forward to our existing /api/events pipeline (writes to Blob)
   const payload: AnalyticsEvent = {
     sessionId: getSessionId(),
     event,

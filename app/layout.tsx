@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
 
@@ -41,6 +42,7 @@ export default function RootLayout({
       </head>
       <body>
         {children}
+        <Analytics />
         <script src="https://app.lemonsqueezy.com/js/lemon.js" defer />
       </body>
     </html>

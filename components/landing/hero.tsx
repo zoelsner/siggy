@@ -1,6 +1,7 @@
 "use client";
 
 import { LicenseInput } from "@/components/license-input";
+import { trackEvent } from "@/lib/analytics";
 import { openCheckout } from "@/lib/checkout-overlay";
 import { useUnlocked } from "@/lib/constants";
 
@@ -23,7 +24,14 @@ export function Hero() {
           </a>
         ) : (
           <>
-            <button className="button button--primary button--large" onClick={() => openCheckout(unlock)} type="button">
+            <button
+              className="button button--primary button--large"
+              onClick={() => {
+                trackEvent("unlock_click", { source: "hero" });
+                openCheckout(unlock);
+              }}
+              type="button"
+            >
               Unlock Siggy — $19
             </button>
             <a className="button button--large" href="/editor">
