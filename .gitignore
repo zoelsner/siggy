@@ -12,6 +12,7 @@ coverage
 .mcp.json
 .superpowers/
 .claude/
+LAUNCH-PLAN.md
 tsconfig.tsbuildinfo
 mockups.html
 mockups-all.png
