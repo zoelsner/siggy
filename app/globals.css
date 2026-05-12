@@ -60,7 +60,13 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
   padding: 0 0 16px;
+}
+
+.topbar > .topbar__right .button--primary {
+  white-space: nowrap;
 }
 
 .topbar__left {
@@ -117,57 +123,141 @@ select {
   letter-spacing: -0.02em;
 }
 
-/* ---- Style toolbar ---- */
+/* ---- Top template pill switcher (Editor C polish) ---- */
 
-.style-toolbar {
+.template-pill-switcher {
   display: flex;
-  align-items: center;
-  gap: 20px;
+  gap: 4px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px 20px;
-  margin-bottom: 16px;
+  border-radius: 999px;
+  padding: 5px;
 }
 
-.style-toolbar__group {
-  display: flex;
+.template-pill-switcher__item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 7px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.template-pill-switcher__item:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.template-pill-switcher__item--active,
+.template-pill-switcher__item--active:hover {
+  background: var(--text);
+  color: var(--bg-elevated);
+}
+
+/* ---- Editor hint banner (Editor C polish) ---- */
+
+.editor-hint {
+  text-align: center;
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-soft);
+  padding: 4px 0 14px;
+}
+
+/* ---- Floating dark style pill (Editor C polish) ---- */
+
+.style-pill {
+  align-self: center;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  background: var(--text);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 14px;
+  margin: 20px auto 4px;
+  box-shadow: 0 16px 40px rgba(20, 20, 20, 0.18);
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-.style-toolbar__label {
+.style-pill__label {
   font-family: "Geist Mono", "SF Mono", Consolas, monospace;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-soft);
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.5);
   flex-shrink: 0;
 }
 
-.style-toolbar__fonts {
+.style-pill__fonts {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 4px;
 }
 
-.style-toolbar__fonts .font-option {
-  width: auto;
-  padding: 5px 10px;
-  font-size: 13px;
+.style-pill__font {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
   white-space: nowrap;
 }
 
-.style-toolbar__divider {
+.style-pill__font:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.style-pill__font--active,
+.style-pill__font--active:hover {
+  background: #fff;
+  color: var(--text);
+}
+
+.style-pill__divider {
   width: 1px;
-  height: 24px;
-  background: var(--border);
+  height: 18px;
+  background: rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
 }
 
-.style-toolbar .swatch {
-  width: 24px;
-  height: 24px;
+.style-pill__swatches {
+  display: flex;
+  gap: 5px;
+}
+
+.style-pill__swatch {
+  appearance: none;
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.style-pill__swatch:hover {
+  transform: scale(1.1);
+}
+
+.style-pill__swatch--active {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
 }
 
 /* ---- Studio grid ---- */
@@ -433,65 +523,6 @@ select {
   border-radius: 10px;
   background: white;
   transition: height 150ms ease;
-}
-
-/* ---- Template strip ---- */
-
-.template-strip {
-  display: flex;
-  gap: 6px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 8px;
-}
-
-.template-thumb {
-  flex: 1;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  transition: background 150ms ease;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow: hidden;
-}
-
-.template-thumb:hover {
-  background: var(--surface);
-}
-
-.template-thumb--active {
-  background: var(--surface);
-  box-shadow: 0 0 0 1.5px var(--text-dim);
-}
-
-.template-thumb__inner {
-  padding: 10px 8px 4px;
-  width: 100%;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.template-thumb__label {
-  display: block;
-  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
-  font-size: 9px;
-  font-weight: 400;
-  color: var(--text-soft);
-  padding: 2px 4px 8px;
-  text-align: center;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.template-thumb--active .template-thumb__label {
-  color: var(--text);
 }
 
 /* ---- States ---- */
@@ -1649,25 +1680,35 @@ select {
     position: static;
   }
 
-  .style-toolbar {
+  .style-pill {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
 
-  .style-toolbar__divider {
+  .style-pill__divider {
     display: none;
+  }
+
+  .topbar {
+    justify-content: center;
+  }
+
+  .topbar__left {
+    flex: 0 0 auto;
+  }
+
+  .topbar__right {
+    flex: 0 0 auto;
+  }
+
+  .template-pill-switcher {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: center;
   }
 
   .secondary-fields {
     flex-direction: column;
-  }
-
-  .template-strip {
-    flex-wrap: wrap;
-  }
-
-  .template-strip .template-thumb {
-    flex: 0 0 calc(33.3% - 4px);
   }
 
   .how-it-works__grid {
@@ -1719,8 +1760,9 @@ select {
     padding-inline: 16px;
   }
 
-  .template-strip .template-thumb {
-    flex: 0 0 calc(50% - 3px);
+  .template-pill-switcher {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .topbar {

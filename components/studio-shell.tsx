@@ -15,7 +15,7 @@ import { touchDocument } from "@/lib/document";
 import { fontFamilyMap, fontOptions, isSystemFont } from "@/lib/fonts";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
 import { getTemplateDefinition, templateDefinitions } from "@/lib/templates";
-import type { AssetUploadResponse, RenderResult, SignatureDocument } from "@/lib/types";
+import type { AssetUploadResponse, RenderResult, SignatureDocument, TemplateId } from "@/lib/types";
 
 import { openCheckout } from "@/lib/checkout-overlay";
 import { useUnlocked } from "@/lib/constants";
@@ -31,74 +31,21 @@ const accentChoices = [
   "#ea580c", // Sunset     — creator
 ];
 
+// Display labels for the top template switcher. IDs stay the same in the
+// document model; only the visible label changes ("Edge" → "Profile") to
+// match the handoff design.
+const TEMPLATE_PILL_LABELS: Record<TemplateId, string> = {
+  bold: "Bold",
+  edge: "Profile",
+  card: "Card",
+  clean: "Clean",
+};
+const TEMPLATE_PILL_ORDER: TemplateId[] = ["bold", "edge", "card", "clean"];
+
 const GOOGLE_FONTS_CSS = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;800;900&family=Montserrat:wght@400;700;800;900&family=Plus+Jakarta+Sans:wght@400;700;800&family=Unbounded:wght@400;700;800;900&display=swap";
 
 function buildPreviewMarkup(html: string) {
   return `<!DOCTYPE html><html lang="en"><head><link rel="stylesheet" href="${GOOGLE_FONTS_CSS}"><style>html,body{margin:0;padding:0;background:#fff;}</style></head><body style="padding:24px;"><div id="sig">${html}</div><script>function resize(){var h=document.getElementById('sig');if(h){parent.postMessage({type:'siggy-resize',height:h.offsetHeight+48},'*');}}resize();new MutationObserver(resize).observe(document.body,{childList:true,subtree:true});window.addEventListener('load',resize);</script></body></html>`;
-}
-
-function TemplateThumbnail({ templateId }: { templateId: string }) {
-  const m = "var(--thumb-muted)";
-  const s = "var(--thumb-strong)";
-  const a = "var(--thumb-accent)";
-  const b = "var(--thumb-bar)";
-
-  const wrap = (children: React.ReactNode) => (
-    <div className="template-thumb__inner">{children}</div>
-  );
-
-  switch (templateId) {
-    case "edge":
-      return wrap(
-        <div style={{ display: "flex", gap: 4, width: "100%" }}>
-          <div style={{ width: 3, borderRadius: 1, background: b, alignSelf: "stretch", flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: a, flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ width: "65%", height: 2.5, background: s, borderRadius: 1, marginBottom: 2 }} />
-                <div style={{ width: "50%", height: 1.5, background: m, borderRadius: 1 }} />
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    case "bold":
-      return wrap(
-        <div style={{ width: "100%" }}>
-          <div style={{ width: "75%", height: 3, background: s, borderRadius: 1, marginBottom: 1.5 }} />
-          <div style={{ width: "55%", height: 3, background: b, borderRadius: 1, marginBottom: 2 }} />
-          <div style={{ width: "100%", height: 1.5, background: b, borderRadius: 1, marginBottom: 3 }} />
-          <div style={{ display: "flex", gap: 4 }}>
-            <div style={{ width: "40%", height: 1.5, background: m, borderRadius: 1 }} />
-            <div style={{ width: 1, background: m, alignSelf: "stretch" }} />
-            <div style={{ width: "35%", height: 1.5, background: m, borderRadius: 1 }} />
-          </div>
-        </div>
-      );
-    case "card":
-      return wrap(
-        <div style={{ border: "1px solid var(--thumb-muted)", borderRadius: 3, display: "flex", overflow: "hidden", width: "100%" }}>
-          <div style={{ width: 14, background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 2, background: a }} />
-          </div>
-          <div style={{ flex: 1, padding: "4px 5px", minWidth: 0 }}>
-            <div style={{ width: "65%", height: 2, background: s, borderRadius: 1, marginBottom: 2 }} />
-            <div style={{ width: "50%", height: 1.5, background: m, borderRadius: 1 }} />
-          </div>
-        </div>
-      );
-    case "clean":
-      return wrap(
-        <div style={{ width: "100%" }}>
-          <div style={{ width: "50%", height: 2.5, background: s, borderRadius: 1, marginBottom: 2 }} />
-          <div style={{ width: "55%", height: 1.5, background: m, borderRadius: 1, marginBottom: 3 }} />
-          <div style={{ width: "70%", height: 1.5, background: m, borderRadius: 1, opacity: 0.6 }} />
-        </div>
-      );
-    default:
-      return null;
-  }
 }
 
 export function StudioShell() {
@@ -339,8 +286,33 @@ export function StudioShell() {
             <div className="wordmark__badge">S</div>
             <span className="wordmark__title">Siggy</span>
           </a>
-          <span className="topbar__divider" />
-          <span className="topbar__eyebrow">Email Signature Builder</span>
+        </div>
+        <div className="template-pill-switcher" role="tablist" aria-label="Template">
+          {TEMPLATE_PILL_ORDER.map((id) => {
+            const template = templateDefinitions.find((t) => t.id === id);
+            if (!template) return null;
+            const active = document.templateId === id;
+            return (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={active}
+                className={`template-pill-switcher__item${active ? " template-pill-switcher__item--active" : ""}`}
+                onClick={() => {
+                  trackEvent("template_selected", { templateId: id });
+                  startTransition(() => {
+                    setDocument((current) =>
+                      touchDocument({ ...current, templateId: id }),
+                    );
+                  });
+                }}
+                title={`${TEMPLATE_PILL_LABELS[id]} — ${template.description}`}
+                type="button"
+              >
+                {TEMPLATE_PILL_LABELS[id]}
+              </button>
+            );
+          })}
         </div>
         <div className="topbar__right">
           <button
@@ -353,52 +325,8 @@ export function StudioShell() {
           </button>
         </div>
       </div>
+      <div className="editor-hint">Edit details on the left · preview updates live as you type</div>
 
-      {/* Style toolbar — font + color */}
-      <div className="style-toolbar">
-        <div className="style-toolbar__group">
-          <span className="style-toolbar__label">Font</span>
-          <div className="style-toolbar__fonts">
-            {fontOptions.map((font) => (
-              <button
-                key={font.id}
-                className={`font-option ${document.fontFamily === font.id ? "font-option--active" : ""}`}
-                onClick={() =>
-                  updateDocument((current) => ({
-                    ...current,
-                    fontFamily: font.id,
-                  }))
-                }
-                style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
-                type="button"
-              >
-                {font.name}
-              </button>
-            ))}
-          </div>
-        </div>
-        <span className="style-toolbar__divider" />
-        <div className="style-toolbar__group">
-          <span className="style-toolbar__label">Color</span>
-          <div className="swatch-row">
-            {accentChoices.map((choice) => (
-              <button
-                key={choice}
-                aria-label={`Use ${choice}`}
-                className={`swatch ${document.accentColor === choice ? "swatch--active" : ""}`}
-                onClick={() =>
-                  updateDocument((current) => ({
-                    ...current,
-                    accentColor: choice
-                  }))
-                }
-                style={{ backgroundColor: choice }}
-                type="button"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
 
       <section className="studio-grid">
         {/* Compact sidebar — identity + contact only */}
@@ -514,29 +442,45 @@ export function StudioShell() {
             )}
           </div>
 
-          <div className="template-strip">
-            {templateDefinitions.map((template) => (
-              <button
-                key={template.id}
-                className={`template-thumb ${document.templateId === template.id ? "template-thumb--active" : ""}`}
-                onClick={() => {
-                  trackEvent("template_selected", { templateId: template.id });
-                  startTransition(() => {
-                    setDocument((current) =>
-                      touchDocument({
-                        ...current,
-                        templateId: template.id
-                      })
-                    );
-                  });
-                }}
-                title={`${template.name} — ${template.description}`}
-                type="button"
-              >
-                <TemplateThumbnail templateId={template.id} />
-                <span className="template-thumb__label">{template.name}</span>
-              </button>
-            ))}
+          <div className="style-pill" role="toolbar" aria-label="Style">
+            <span className="style-pill__label">Font</span>
+            <div className="style-pill__fonts">
+              {fontOptions.map((font) => (
+                <button
+                  key={font.id}
+                  className={`style-pill__font${document.fontFamily === font.id ? " style-pill__font--active" : ""}`}
+                  onClick={() =>
+                    updateDocument((current) => ({
+                      ...current,
+                      fontFamily: font.id,
+                    }))
+                  }
+                  style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
+                  type="button"
+                >
+                  {font.name}
+                </button>
+              ))}
+            </div>
+            <span className="style-pill__divider" />
+            <span className="style-pill__label">Color</span>
+            <div className="style-pill__swatches">
+              {accentChoices.map((choice) => (
+                <button
+                  key={choice}
+                  aria-label={`Use ${choice}`}
+                  className={`style-pill__swatch${document.accentColor === choice ? " style-pill__swatch--active" : ""}`}
+                  onClick={() =>
+                    updateDocument((current) => ({
+                      ...current,
+                      accentColor: choice,
+                    }))
+                  }
+                  style={{ backgroundColor: choice }}
+                  type="button"
+                />
+              ))}
+            </div>
           </div>
 
           <InstallGuide
