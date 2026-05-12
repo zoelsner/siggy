@@ -17,10 +17,8 @@ import { createBrowserDraftAdapter } from "@/lib/persistence";
 import { getTemplateDefinition, templateDefinitions } from "@/lib/templates";
 import type { AssetUploadResponse, RenderResult, SignatureDocument, TemplateId } from "@/lib/types";
 
-import { openCheckout } from "@/lib/checkout-overlay";
-import { useUnlocked } from "@/lib/constants";
+import { useAccess } from "@/lib/billing";
 import { InstallGuide } from "./install-guide";
-import { LicenseInput } from "./license-input";
 
 const accentChoices = [
   "#1e3a8a", // Navy       — professional
@@ -49,7 +47,7 @@ function buildPreviewMarkup(html: string) {
 }
 
 export function StudioShell() {
-  const { unlocked, resolved, unlock } = useUnlocked();
+  const { unlocked, token } = useAccess();
   const [document, setDocument] = useState<SignatureDocument>(() => createDefaultDocument());
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [renderState, setRenderState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
@@ -104,7 +102,7 @@ export function StudioShell() {
           body: JSON.stringify({
             document: deferredDocument,
             profileId: "gmail_web",
-            unlocked
+            token
           }),
           signal: controller.signal
         });
@@ -134,7 +132,7 @@ export function StudioShell() {
 
     void run();
     return () => controller.abort();
-  }, [deferredDocument, unlocked]);
+  }, [deferredDocument, token]);
 
   function updateDocument(mutator: (current: SignatureDocument) => SignatureDocument) {
     setDocument((current) => {
@@ -186,7 +184,7 @@ export function StudioShell() {
         body: JSON.stringify({
           document: copyDoc,
           profileId: document.targetProfileId,
-          unlocked,
+          token,
         }),
       });
 

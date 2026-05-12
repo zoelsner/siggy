@@ -43,7 +43,6 @@ export default function RootLayout({
       <body>
         {children}
         <Analytics />
-        <script src="https://app.lemonsqueezy.com/js/lemon.js" defer />
       </body>
     </html>
   );

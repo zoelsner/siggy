@@ -1,11 +1,10 @@
 "use client";
 
 import { trackEvent } from "@/lib/analytics";
-import { openCheckout } from "@/lib/checkout-overlay";
-import { useUnlocked } from "@/lib/constants";
+import { useAccess } from "@/lib/billing";
 
 export function LandingNav() {
-  const { unlocked, resolved, unlock } = useUnlocked();
+  const { unlocked, resolved, startCheckout } = useAccess();
 
   return (
     <nav className="landing-nav">
@@ -25,7 +24,7 @@ export function LandingNav() {
             className="button button--primary"
             onClick={() => {
               trackEvent("unlock_click", { source: "nav" });
-              openCheckout(unlock);
+              void startCheckout();
             }}
             type="button"
           >
