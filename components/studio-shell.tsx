@@ -40,7 +40,7 @@ const TEMPLATE_PILL_LABELS: Record<TemplateId, string> = {
 };
 const TEMPLATE_PILL_ORDER: TemplateId[] = ["bold", "edge", "card", "clean"];
 
-const GOOGLE_FONTS_CSS = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;800;900&family=Montserrat:wght@400;700;800;900&family=Plus+Jakarta+Sans:wght@400;700;800&family=Unbounded:wght@400;700;800;900&display=swap";
+const GOOGLE_FONTS_CSS = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;800;900&family=Fraunces:wght@400;700;800;900&family=Outfit:wght@400;700;800;900&family=Anton&family=Instrument+Serif:wght@400&family=Space+Grotesk:wght@400;700&family=Playfair+Display:wght@400;700;900&family=Bricolage+Grotesque:wght@400;700;800&family=JetBrains+Mono:wght@400;700&display=swap";
 
 function buildPreviewMarkup(html: string) {
   return `<!DOCTYPE html><html lang="en"><head><link rel="stylesheet" href="${GOOGLE_FONTS_CSS}"><style>html,body{margin:0;padding:0;background:#fff;}</style></head><body style="padding:24px;"><div id="sig">${html}</div><script>function resize(){var h=document.getElementById('sig');if(h){parent.postMessage({type:'siggy-resize',height:h.offsetHeight+48},'*');}}resize();new MutationObserver(resize).observe(document.body,{childList:true,subtree:true});window.addEventListener('load',resize);</script></body></html>`;
@@ -490,65 +490,8 @@ export function StudioShell() {
         </div>
       </section>
 
-      {/* Secondary fields — links/socials + headshot */}
+      {/* Secondary fields — headshot only (links/socials moved to inline "+ Add field" pattern) */}
       <div className="secondary-fields">
-        <div className="secondary-card">
-          <h3 className="secondary-card__heading">Links & Socials</h3>
-          <div className="secondary-card__grid">
-            {document.socials.map((social, index) => (
-              <div className="field" key={social.id}>
-                <label htmlFor={`social-${social.platform}`}>{social.platform}</label>
-                <input
-                  id={`social-${social.platform}`}
-                  onChange={(event) =>
-                    updateDocument((current) => ({
-                      ...current,
-                      socials: current.socials.map((entry, entryIndex) =>
-                        entryIndex === index
-                          ? {
-                              ...entry,
-                              url: event.target.value
-                            }
-                          : entry
-                      )
-                    }))
-                  }
-                  placeholder="username"
-                  value={social.url}
-                />
-              </div>
-            ))}
-            <div className="field">
-              <label htmlFor="ctaText">CTA Label</label>
-              <input
-                id="ctaText"
-                onChange={(event) =>
-                  updateDocument((current) => ({
-                    ...current,
-                    cta: { text: event.target.value, url: current.cta?.url ?? "" }
-                  }))
-                }
-                placeholder="Book a call"
-                value={document.cta?.text ?? ""}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="ctaUrl">CTA Link</label>
-              <input
-                id="ctaUrl"
-                onChange={(event) =>
-                  updateDocument((current) => ({
-                    ...current,
-                    cta: { text: current.cta?.text ?? "", url: event.target.value }
-                  }))
-                }
-                placeholder="calendly.com/you"
-                value={document.cta?.url ?? ""}
-              />
-            </div>
-          </div>
-        </div>
-
         {getTemplateDefinition(document.templateId).supportsImage ? (
           <div className="secondary-card">
             <h3 className="secondary-card__heading">Headshot</h3>

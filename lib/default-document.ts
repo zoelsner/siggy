@@ -1,10 +1,10 @@
 import type { SignatureDocument, SocialLink } from "./types";
 
 const baseSocials: SocialLink[] = [
-  { id: "linkedin", platform: "linkedin", url: "linkedin.com/in/sarahchen" },
-  { id: "x", platform: "x", url: "x.com/sarahchen" },
+  { id: "linkedin", platform: "linkedin", url: "" },
+  { id: "x", platform: "x", url: "" },
   { id: "instagram", platform: "instagram", url: "" },
-  { id: "github", platform: "github", url: "github.com/sarahchen" }
+  { id: "github", platform: "github", url: "" }
 ];
 
 export function createDefaultDocument(): SignatureDocument {
