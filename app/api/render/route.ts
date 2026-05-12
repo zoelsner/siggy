@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { verifyAccessToken } from "@/lib/billing/token";
 import { renderSignature } from "@/lib/render";
 import type { ClientProfileId } from "@/lib/types";
 
@@ -15,10 +16,12 @@ export async function POST(request: NextRequest) {
       ? (payload.profileId as ClientProfileId)
       : undefined;
 
-  const unlocked =
-    isRecord(payload) && typeof payload.unlocked === "boolean"
-      ? payload.unlocked
-      : false;
+  // Server-derived unlock: verify the access token instead of trusting a client boolean.
+  // Without this, anyone could POST { unlocked: true } and bypass the watermark.
+  const token =
+    isRecord(payload) && typeof payload.token === "string" ? payload.token : null;
+  const claims = token ? await verifyAccessToken(token) : null;
+  const unlocked = claims !== null;
 
   const result = await renderSignature(document, {
     origin: request.nextUrl.origin,

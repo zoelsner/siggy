@@ -18,7 +18,7 @@ Email signature builder for designers, creatives, and freelancers. Pick a templa
 
 - Free with a small watermark
 - $19 lifetime license removes the watermark and unlocks full font/headshot options
-- Payments via Lemon Squeezy; license keys cached in localStorage and re-verified each session
+- Payments via Stripe Checkout (hosted); access proven by HMAC-signed token in localStorage, no DB
 
 ## Tech stack
 
@@ -26,14 +26,14 @@ Email signature builder for designers, creatives, and freelancers. Pick a templa
 - **UI:** React 19 + TypeScript + Tailwind
 - **Image rendering:** Satori + @resvg/resvg-js (server-side name images), sharp (headshot processing)
 - **Storage:** Vercel Blob for user-uploaded assets
-- **Payments:** Lemon Squeezy (license-key based)
+- **Payments:** Stripe Checkout (hosted page) + HMAC access token (no DB)
 - **Tests:** Vitest with snapshot tests for template rendering
 
 ## Run locally
 
 ```bash
 npm install
-cp .env.local.example .env.local   # add BLOB_READ_WRITE_TOKEN, LEMON_SQUEEZY_API_KEY
+cp .env.local.example .env.local   # add BLOB_READ_WRITE_TOKEN, STRIPE_SECRET_KEY, STRIPE_PRICE_ID, SIGGY_TOKEN_SECRET
 npm run dev                         # http://localhost:3000
 ```
 
@@ -47,7 +47,7 @@ npx vitest --run -u     # update template snapshots
 
 ## Status
 
-MVP shipped, in test mode for payments. Six templates, Gmail-ready output, license-key unlock flow live. Outlook/Apple Mail render adapters in place.
+MVP shipped, in test mode for payments. Six templates, Gmail-ready output, Stripe-based unlock flow live. Outlook/Apple Mail render adapters in place.
 
 ## License
 

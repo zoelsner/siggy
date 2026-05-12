@@ -18,27 +18,30 @@ npx vitest --run -u  # Update snapshots
 app/
   page.tsx             # Landing page (marketing)
   editor/page.tsx      # Editor page (product)
-  layout.tsx           # Root layout + lemon.js script
+  layout.tsx           # Root layout
   api/
     render/            # Signature HTML rendering
     render-name/       # Name-as-image rendering (satori + resvg)
     assets/            # Headshot upload (sharp → Vercel Blob)
-    verify-license/    # License key validation via LS API
-    activate-order/    # Order ID → license key bridge for checkout overlay
+    billing/
+      checkout/        # POST → creates Stripe Checkout Session, returns hosted URL
+      verify-session/  # POST { sessionId } → exchanges paid Stripe session for HMAC token
+      verify-token/    # POST { token } → verifies HMAC signature (no Stripe call)
     events/            # Analytics stub (console.log only)
 
 components/
   studio-shell.tsx     # Main editor UI (sidebar + preview + template strip)
-  license-input.tsx    # "Have a license key?" input
   install-guide.tsx    # Gmail paste instructions
   landing/             # Landing page sections (hero, nav, pricing, templates, how-it-works, footer)
 
 lib/
   templates.tsx        # 4 signature templates (edge, bold, card, clean) — renders to React/HTML
   fonts.ts             # Font options, fontFamilyMap, Google Fonts fetching
-  constants.ts         # useUnlocked hook (license verification + localStorage cache)
-  checkout.ts          # CHECKOUT_URL constant
-  checkout-overlay.ts  # Lemon Squeezy overlay (lemon.js) + order→license bridge
+  billing/
+    index.ts           # Public surface: { useAccess }
+    use-access.ts      # Client hook — { unlocked, resolved, startCheckout }; redeems ?session_id=… on mount
+    stripe.ts          # Stripe SDK adapter — createCheckoutSession, isSessionPaid
+    token.ts           # HMAC sign/verify for the access token (Web Crypto)
   runtime.ts           # Vercel Blob storage (saveAsset)
   render.tsx           # Server-side signature rendering pipeline
   types.ts             # Shared types (SignatureDocument, TemplateDefinition, etc.)
@@ -46,18 +49,21 @@ lib/
 
 ## Payment / Unlock Flow
 
-- **Lemon Squeezy** for payments. Product: $19 LTD with license keys (unlimited length, 5 activations).
-- **Currently in test mode** — no real charges. Test card: `4242 4242 4242 4242`
-- Checkout opens as overlay via lemon.js → on success, `/api/activate-order` looks up license key → `/api/verify-license` validates it
-- Returning users: license key cached in localStorage (`siggy_license`), re-verified against LS API every session
-- Manual entry: `LicenseInput` component for pasting license key from email
+- **Stripe Checkout (hosted)** for payments. One-time $19 lifetime price.
+- **Test mode** by default — test card `4242 4242 4242 4242`, any future expiry, any CVC.
+- Click "Unlock Siggy" → `POST /api/billing/checkout` creates a Stripe Checkout Session → user is redirected to Stripe's hosted page → on success, Stripe redirects to `/editor?session_id=cs_…`.
+- The editor mounts → `useAccess()` detects `session_id`, calls `POST /api/billing/verify-session` which (a) confirms `payment_status === 'paid'` against Stripe and (b) returns an HMAC-signed access token. Token goes into `localStorage` as `siggy_access`.
+- Returning users: token verified locally on every load via `POST /api/billing/verify-token` — pure HMAC check, no Stripe call. Lifetime = no token expiry.
+- No license keys, no overlay, no DB. The signed token IS the proof of purchase.
 
 ## Environment Variables
 
 | Var | Where | Purpose |
 |-----|-------|---------|
 | `BLOB_READ_WRITE_TOKEN` | `.env.local` + Vercel | Vercel Blob storage for headshots/name images |
-| `LEMON_SQUEEZY_API_KEY` | `.env.local` + Vercel | LS API for license validation + order lookup |
+| `STRIPE_SECRET_KEY` | `.env.local` + Vercel | Stripe API auth (use `sk_test_…` in dev) |
+| `STRIPE_PRICE_ID` | `.env.local` + Vercel | Stripe Price object for the $19 LTD |
+| `SIGGY_TOKEN_SECRET` | `.env.local` + Vercel | 32-byte hex string used to HMAC-sign access tokens — rotating it invalidates all existing tokens |
 
 ## Gotchas
 

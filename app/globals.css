@@ -1643,6 +1643,19 @@ select {
   width: 100%;
 }
 
+.pricing-card__error {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.pricing-card__error a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 /* Landing footer */
 
 .landing-footer {

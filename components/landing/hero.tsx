@@ -1,13 +1,12 @@
 "use client";
 
 import { trackEvent } from "@/lib/analytics";
-import { openCheckout } from "@/lib/checkout-overlay";
-import { useUnlocked } from "@/lib/constants";
+import { useAccess } from "@/lib/billing";
 
 const PALETTE = ["#1d1b19", "#4f46e5", "#c9583d", "#2f6a52", "#a86b2c", "#5a4ba0"];
 
 export function Hero() {
-  const { unlocked, resolved, unlock } = useUnlocked();
+  const { unlocked, resolved, startCheckout } = useAccess();
 
   return (
     <section className="hero hero--split">
@@ -30,7 +29,7 @@ export function Hero() {
               className="button button--primary button--large"
               onClick={() => {
                 trackEvent("unlock_click", { source: "hero" });
-                openCheckout(unlock);
+                void startCheckout();
               }}
               type="button"
             >

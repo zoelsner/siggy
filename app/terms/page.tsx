@@ -28,7 +28,7 @@ export default function TermsPage() {
 
       <h2>3. Payment &amp; Refunds</h2>
       <p>
-        Payments are processed through Lemon Squeezy. All sales are final. If you experience a
+        Payments are processed through Stripe. All sales are final. If you experience a
         technical issue that prevents you from using the Service, contact us within 14 days of
         purchase and we will work to resolve it or issue a refund at our discretion.
       </p>

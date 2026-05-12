@@ -1,12 +1,10 @@
 "use client";
 
-import { LicenseInput } from "@/components/license-input";
 import { trackEvent } from "@/lib/analytics";
-import { openCheckout } from "@/lib/checkout-overlay";
-import { useUnlocked } from "@/lib/constants";
+import { useAccess } from "@/lib/billing";
 
 export function Pricing() {
-  const { unlocked, resolved, unlock } = useUnlocked();
+  const { unlocked, resolved, error, startCheckout } = useAccess();
 
   const features = [
     "4 editorial-quality templates",
@@ -42,13 +40,24 @@ export function Pricing() {
               className="button button--primary button--large pricing-card__cta"
               onClick={() => {
                 trackEvent("unlock_click", { source: "pricing" });
-                openCheckout(unlock);
+                void startCheckout();
               }}
               type="button"
             >
               Unlock Siggy — $19
             </button>
-            <LicenseInput onUnlock={unlock} />
+            {error === "checkout_failed" ? (
+              <p className="pricing-card__error">
+                Couldn&apos;t open checkout. Try again, or email{" "}
+                <a href="mailto:zach@siggy.app">zach@siggy.app</a>.
+              </p>
+            ) : null}
+            {error === "redeem_failed" ? (
+              <p className="pricing-card__error">
+                We received your payment but couldn&apos;t verify it. Email{" "}
+                <a href="mailto:zach@siggy.app">zach@siggy.app</a> with your receipt.
+              </p>
+            ) : null}
           </>
         )}
       </div>
