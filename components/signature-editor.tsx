@@ -68,6 +68,9 @@ export function SignatureEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isBold = document.templateId === "bold";
+  const isEdge = document.templateId === "edge";
+  const isCard = document.templateId === "card";
+  const isClean = document.templateId === "clean";
   const supportsImage = document.templateId === "edge" || document.templateId === "card";
   const fontFamily = fontFamilyMap[document.fontFamily] ?? fontFamilyMap["dm-sans"];
 
@@ -146,57 +149,326 @@ export function SignatureEditor({
     .map((c) => c[0] ?? "")
     .join("")
     .toUpperCase();
+  const websiteDisplay = document.website.replace(/^https?:\/\//i, "");
+  const socialPlatforms = ["linkedin", "x", "instagram", "github"] as SocialPlatform[];
+  const hasSocials = socialPlatforms.some((p) => visible.has(p));
+
+  const avatarSlot = supportsImage ? (
+    <div className="sig-editor__avatar-slot">
+      {imageUrl ? (
+        <div className="sig-editor__avatar sig-editor__avatar--photo">
+          <img alt={document.image?.alt ?? document.fullName} src={imageUrl} />
+          <button
+            aria-label="Remove headshot"
+            className="sig-editor__avatar-remove"
+            onClick={() => onImageRemoved()}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+      ) : (
+        <button
+          aria-label="Add headshot"
+          className="sig-editor__avatar"
+          onClick={() => fileInputRef.current?.click()}
+          style={{ background: document.accentColor }}
+          type="button"
+        >
+          <span className="sig-editor__avatar-initials">{initials}</span>
+          <span className="sig-editor__avatar-plus" aria-hidden="true">+</span>
+        </button>
+      )}
+      {isUploading ? <span className="sig-editor__avatar-status">Uploading…</span> : null}
+      {imageError ? <span className="sig-editor__avatar-status sig-editor__avatar-status--error">{imageError}</span> : null}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleImagePicked(file);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  ) : null;
+
+  const socialsBlock = hasSocials ? (
+    <div className="sig-editor__socials">
+      {socialPlatforms
+        .filter((p) => visible.has(p))
+        .map((platform, idx) => (
+          <span className="sig-editor__social" key={platform}>
+            {idx > 0 ? <span aria-hidden="true" className="sig-editor__social-sep">·</span> : null}
+            <span className="sig-editor__social-label">{SOCIAL_LABEL[platform]}</span>
+            <InlineField
+              id={`sig-social-${platform}`}
+              label={SOCIAL_LABEL[platform]}
+              value={getSocial(document, platform)?.url ?? ""}
+              onChange={(v) => setSocial(platform, v)}
+              onFocus={onFieldFocus}
+              placeholder={SOCIAL_PLACEHOLDER[platform]}
+              className="sig-editor__social-input"
+              autoFocus={!getSocial(document, platform)?.url}
+            />
+          </span>
+        ))}
+    </div>
+  ) : null;
+
+  const ctaBlock = visible.has("cta") ? (
+    <div className="sig-editor__cta">
+      <InlineField
+        id="sig-cta-text"
+        label="CTA label"
+        value={document.cta?.text ?? ""}
+        onChange={setCtaText}
+        onFocus={onFieldFocus}
+        placeholder="Book a call"
+        className="sig-editor__cta-text"
+        autoFocus={!document.cta?.text}
+      />
+      <span aria-hidden="true" className="sig-editor__cta-arrow">→</span>
+      <InlineField
+        id="sig-cta-url"
+        label="CTA link"
+        value={document.cta?.url ?? ""}
+        onChange={setCtaUrl}
+        onFocus={onFieldFocus}
+        placeholder="calendly.com/you"
+        className="sig-editor__cta-url"
+      />
+    </div>
+  ) : null;
+
+  const addFieldBlock = hidden.length > 0 ? (
+    <div className="sig-editor__add-wrap">
+      <button
+        aria-expanded={addOpen}
+        className="sig-editor__add"
+        onClick={() => setAddOpen(!addOpen)}
+        type="button"
+      >
+        + Add field
+      </button>
+      {addOpen ? (
+        <div className="sig-editor__add-menu" role="menu">
+          {hidden.map((key) => (
+            <button
+              className="sig-editor__add-option"
+              key={key}
+              onClick={() => revealField(key)}
+              role="menuitem"
+              type="button"
+            >
+              {key === "phone" ? "Phone" : null}
+              {key === "website" ? "Website" : null}
+              {key === "linkedin" ? "LinkedIn" : null}
+              {key === "x" ? "X (Twitter)" : null}
+              {key === "instagram" ? "Instagram" : null}
+              {key === "github" ? "GitHub" : null}
+              {key === "cta" ? "Call-to-action button" : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  ) : null;
+
+  const watermarkBlock = !unlocked ? (
+    <div className="sig-editor__watermark">
+      Made with <a href="https://siggy.app">Siggy</a>
+    </div>
+  ) : null;
 
   return (
     <div className="sig-editor" style={{ fontFamily }}>
-      <div className={`sig-editor__card${supportsImage ? "" : " sig-editor__card--no-avatar"}`}>
-        {supportsImage ? (
-        <div className="sig-editor__avatar-slot">
-          {imageUrl ? (
-            <div className="sig-editor__avatar sig-editor__avatar--photo">
-              <img alt={document.image?.alt ?? document.fullName} src={imageUrl} />
-              <button
-                aria-label="Remove headshot"
-                className="sig-editor__avatar-remove"
-                onClick={() => onImageRemoved()}
-                type="button"
-              >
-                ×
-              </button>
+      <div
+        className={`sig-editor__card sig-editor__card--${document.templateId}${supportsImage ? "" : " sig-editor__card--no-avatar"}`}
+        style={{ ["--accent" as string]: document.accentColor }}
+      >
+        {isEdge ? (
+          <>
+            <div className="sig-editor__edge-bar" aria-hidden="true" />
+            <div className="sig-editor__edge-content">
+              {avatarSlot}
+              <div className="sig-editor__body sig-editor__edge-body">
+                <InlineField
+                  id="sig-name"
+                  label="Name"
+                  value={document.fullName}
+                  onChange={setName}
+                  onFocus={onFieldFocus}
+                  placeholder="Your name"
+                  className="sig-editor__edge-name-input sig-editor__edge-name-input--accent"
+                  minWidth={120}
+                />
+                <div className="sig-editor__edge-role">
+                  <InlineField
+                    id="sig-job"
+                    label="Title"
+                    value={document.jobTitle}
+                    onChange={setJobTitle}
+                    onFocus={onFieldFocus}
+                    placeholder="Job title"
+                    className="sig-editor__edge-role-input"
+                  />
+                  <span>at</span>
+                  <InlineField
+                    id="sig-company"
+                    label="Company"
+                    value={document.company}
+                    onChange={setCompany}
+                    onFocus={onFieldFocus}
+                    placeholder="Company"
+                    className="sig-editor__edge-role-input"
+                  />
+                </div>
+                <div className="sig-editor__edge-contacts">
+                  <div className="sig-editor__edge-contact-row">
+                    <span className="sig-editor__edge-icon" aria-hidden="true">✉</span>
+                    <InlineField
+                      id="sig-email"
+                      label="Email"
+                      value={document.email}
+                      onChange={setEmail}
+                      onFocus={onFieldFocus}
+                      placeholder="you@example.com"
+                      className="sig-editor__edge-contact-input sig-editor__edge-contact-input--accent"
+                      minWidth={140}
+                    />
+                  </div>
+                  {visible.has("phone") ? (
+                    <div className="sig-editor__edge-contact-row">
+                      <span className="sig-editor__edge-icon" aria-hidden="true">☏</span>
+                      <InlineField
+                        id="sig-phone"
+                        label="Phone"
+                        value={document.phone}
+                        onChange={setPhone}
+                        onFocus={onFieldFocus}
+                        placeholder="+1 (555) 000-0000"
+                        className="sig-editor__edge-contact-input"
+                        autoFocus={!document.phone}
+                      />
+                    </div>
+                  ) : null}
+                  {visible.has("website") ? (
+                    <div className="sig-editor__edge-contact-row">
+                      <span className="sig-editor__edge-icon" aria-hidden="true">⊕</span>
+                      <InlineField
+                        id="sig-website"
+                        label="Website"
+                        value={websiteDisplay}
+                        onChange={setWebsite}
+                        onFocus={onFieldFocus}
+                        placeholder="yoursite.com"
+                        className="sig-editor__edge-contact-input sig-editor__edge-contact-input--accent"
+                        autoFocus={!document.website}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                {socialsBlock}
+                {ctaBlock}
+                {addFieldBlock}
+                {watermarkBlock}
+              </div>
             </div>
-          ) : (
-            <button
-              aria-label="Add headshot"
-              className="sig-editor__avatar"
-              onClick={() => fileInputRef.current?.click()}
-              style={{ background: document.accentColor }}
-              type="button"
-            >
-              <span className="sig-editor__avatar-initials">{initials}</span>
-              <span className="sig-editor__avatar-plus" aria-hidden="true">+</span>
-            </button>
-          )}
-          {isUploading ? <span className="sig-editor__avatar-status">Uploading…</span> : null}
-          {imageError ? <span className="sig-editor__avatar-status sig-editor__avatar-status--error">{imageError}</span> : null}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void handleImagePicked(file);
-              e.target.value = "";
-            }}
-          />
-        </div>
+          </>
         ) : null}
 
-        <div className="sig-editor__body">
-          {isBold ? (
+        {isCard ? (
+          <>
+            {avatarSlot}
+            <div className="sig-editor__body sig-editor__card-body">
+              <InlineField
+                id="sig-name"
+                label="Name"
+                value={document.fullName}
+                onChange={setName}
+                onFocus={onFieldFocus}
+                placeholder="Your name"
+                className="sig-editor__card-name-input sig-editor__card-name-input--accent"
+                minWidth={120}
+              />
+              <div className="sig-editor__card-role">
+                <InlineField
+                  id="sig-job"
+                  label="Title"
+                  value={document.jobTitle}
+                  onChange={setJobTitle}
+                  onFocus={onFieldFocus}
+                  placeholder="Job title"
+                  className="sig-editor__card-role-input"
+                />
+                <span aria-hidden="true" className="sig-editor__card-role-sep">·</span>
+                <InlineField
+                  id="sig-company"
+                  label="Company"
+                  value={document.company}
+                  onChange={setCompany}
+                  onFocus={onFieldFocus}
+                  placeholder="Company"
+                  className="sig-editor__card-role-input"
+                />
+              </div>
+              <div className="sig-editor__card-rule" />
+              <div className="sig-editor__card-contacts">
+                <div className="sig-editor__card-contact-line">
+                  <InlineField
+                    id="sig-email"
+                    label="Email"
+                    value={document.email}
+                    onChange={setEmail}
+                    onFocus={onFieldFocus}
+                    placeholder="you@example.com"
+                    className="sig-editor__card-contact-input sig-editor__card-contact-input--accent"
+                    minWidth={140}
+                  />
+                  {visible.has("phone") ? (
+                    <>
+                      <span aria-hidden="true" className="sig-editor__card-contact-sep">|</span>
+                      <InlineField
+                        id="sig-phone"
+                        label="Phone"
+                        value={document.phone}
+                        onChange={setPhone}
+                        onFocus={onFieldFocus}
+                        placeholder="+1 (555) 000-0000"
+                        className="sig-editor__card-contact-input"
+                        autoFocus={!document.phone}
+                      />
+                    </>
+                  ) : null}
+                </div>
+                {visible.has("website") ? (
+                  <InlineField
+                    id="sig-website"
+                    label="Website"
+                    value={websiteDisplay}
+                    onChange={setWebsite}
+                    onFocus={onFieldFocus}
+                    placeholder="yoursite.com"
+                    className="sig-editor__card-contact-input sig-editor__card-contact-input--accent"
+                    autoFocus={!document.website}
+                  />
+                ) : null}
+              </div>
+              {socialsBlock}
+              {ctaBlock}
+              {addFieldBlock}
+              {watermarkBlock}
+            </div>
+          </>
+        ) : null}
+
+        {isBold ? (
+          <div className="sig-editor__body">
             <div
               className="sig-editor__bold-name"
-              style={{ ["--accent" as string]: document.accentColor }}
             >
               <InlineField
                 id="sig-name-first"
@@ -220,18 +492,6 @@ export function SignatureEditor({
               />
               <div className="sig-editor__bold-rule" />
             </div>
-          ) : (
-            <InlineField
-              id="sig-name"
-              label="Name"
-              value={document.fullName}
-              onChange={setName}
-              onFocus={onFieldFocus}
-              placeholder="Your name"
-              className="sig-editor__name-input"
-              minWidth={120}
-            />
-          )}
 
           <div className="sig-editor__role">
             <InlineField
@@ -298,94 +558,94 @@ export function SignatureEditor({
             ) : null}
           </div>
 
-          {(["linkedin", "x", "instagram", "github"] as SocialPlatform[]).some((p) => visible.has(p)) ? (
-            <div className="sig-editor__socials">
-              {(["linkedin", "x", "instagram", "github"] as SocialPlatform[])
-                .filter((p) => visible.has(p))
-                .map((platform, idx) => (
-                  <span className="sig-editor__social" key={platform}>
-                    {idx > 0 ? <span aria-hidden="true" className="sig-editor__social-sep">·</span> : null}
-                    <span className="sig-editor__social-label">{SOCIAL_LABEL[platform]}</span>
-                    <InlineField
-                      id={`sig-social-${platform}`}
-                      label={SOCIAL_LABEL[platform]}
-                      value={getSocial(document, platform)?.url ?? ""}
-                      onChange={(v) => setSocial(platform, v)}
-                      onFocus={onFieldFocus}
-                      placeholder={SOCIAL_PLACEHOLDER[platform]}
-                      className="sig-editor__social-input"
-                      autoFocus={!getSocial(document, platform)?.url}
-                    />
-                  </span>
-                ))}
-            </div>
-          ) : null}
+          {socialsBlock}
+          {ctaBlock}
+          {addFieldBlock}
+          {watermarkBlock}
+        </div>
+        ) : null}
 
-          {visible.has("cta") ? (
-            <div className="sig-editor__cta">
+        {isClean ? (
+          <div className="sig-editor__body sig-editor__clean-body">
+            <InlineField
+              id="sig-name"
+              label="Name"
+              value={document.fullName}
+              onChange={setName}
+              onFocus={onFieldFocus}
+              placeholder="Your name"
+              className="sig-editor__clean-name-input sig-editor__clean-name-input--accent"
+              minWidth={120}
+            />
+            <div className="sig-editor__clean-role">
               <InlineField
-                id="sig-cta-text"
-                label="CTA label"
-                value={document.cta?.text ?? ""}
-                onChange={setCtaText}
+                id="sig-job"
+                label="Title"
+                value={document.jobTitle}
+                onChange={setJobTitle}
                 onFocus={onFieldFocus}
-                placeholder="Book a call"
-                className="sig-editor__cta-text"
-                autoFocus={!document.cta?.text}
+                placeholder="Job title"
+                className="sig-editor__clean-role-input"
               />
-              <span aria-hidden="true" className="sig-editor__cta-arrow">→</span>
+              <span aria-hidden="true">,</span>
               <InlineField
-                id="sig-cta-url"
-                label="CTA link"
-                value={document.cta?.url ?? ""}
-                onChange={setCtaUrl}
+                id="sig-company"
+                label="Company"
+                value={document.company}
+                onChange={setCompany}
                 onFocus={onFieldFocus}
-                placeholder="calendly.com/you"
-                className="sig-editor__cta-url"
+                placeholder="Company"
+                className="sig-editor__clean-role-input"
               />
             </div>
-          ) : null}
-
-          {hidden.length > 0 ? (
-            <div className="sig-editor__add-wrap">
-              <button
-                aria-expanded={addOpen}
-                className="sig-editor__add"
-                onClick={() => setAddOpen(!addOpen)}
-                type="button"
-              >
-                + Add field
-              </button>
-              {addOpen ? (
-                <div className="sig-editor__add-menu" role="menu">
-                  {hidden.map((key) => (
-                    <button
-                      className="sig-editor__add-option"
-                      key={key}
-                      onClick={() => revealField(key)}
-                      role="menuitem"
-                      type="button"
-                    >
-                      {key === "phone" ? "Phone" : null}
-                      {key === "website" ? "Website" : null}
-                      {key === "linkedin" ? "LinkedIn" : null}
-                      {key === "x" ? "X (Twitter)" : null}
-                      {key === "instagram" ? "Instagram" : null}
-                      {key === "github" ? "GitHub" : null}
-                      {key === "cta" ? "Call-to-action button" : null}
-                    </button>
-                  ))}
-                </div>
+            <div className="sig-editor__clean-contacts">
+              <InlineField
+                id="sig-email"
+                label="Email"
+                value={document.email}
+                onChange={setEmail}
+                onFocus={onFieldFocus}
+                placeholder="you@example.com"
+                className="sig-editor__clean-contact-input"
+                minWidth={140}
+              />
+              {visible.has("phone") ? (
+                <>
+                  <span aria-hidden="true" className="sig-editor__clean-contact-sep">·</span>
+                  <InlineField
+                    id="sig-phone"
+                    label="Phone"
+                    value={document.phone}
+                    onChange={setPhone}
+                    onFocus={onFieldFocus}
+                    placeholder="+1 (555) 000-0000"
+                    className="sig-editor__clean-contact-input"
+                    autoFocus={!document.phone}
+                  />
+                </>
+              ) : null}
+              {visible.has("website") ? (
+                <>
+                  <span aria-hidden="true" className="sig-editor__clean-contact-sep">·</span>
+                  <InlineField
+                    id="sig-website"
+                    label="Website"
+                    value={websiteDisplay}
+                    onChange={setWebsite}
+                    onFocus={onFieldFocus}
+                    placeholder="yoursite.com"
+                    className="sig-editor__clean-contact-input"
+                    autoFocus={!document.website}
+                  />
+                </>
               ) : null}
             </div>
-          ) : null}
-
-          {!unlocked ? (
-            <div className="sig-editor__watermark">
-              Made with <a href="https://siggy.app">Siggy</a>
-            </div>
-          ) : null}
-        </div>
+            {socialsBlock}
+            {ctaBlock}
+            {addFieldBlock}
+            {watermarkBlock}
+          </div>
+        ) : null}
       </div>
     </div>
   );
