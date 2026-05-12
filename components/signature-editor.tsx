@@ -68,6 +68,7 @@ export function SignatureEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isBold = document.templateId === "bold";
+  const supportsImage = document.templateId === "edge" || document.templateId === "card";
   const fontFamily = fontFamilyMap[document.fontFamily] ?? fontFamilyMap["dm-sans"];
 
   const visible = useMemo(() => {
@@ -148,7 +149,8 @@ export function SignatureEditor({
 
   return (
     <div className="sig-editor" style={{ fontFamily }}>
-      <div className="sig-editor__card">
+      <div className={`sig-editor__card${supportsImage ? "" : " sig-editor__card--no-avatar"}`}>
+        {supportsImage ? (
         <div className="sig-editor__avatar-slot">
           {imageUrl ? (
             <div className="sig-editor__avatar sig-editor__avatar--photo">
@@ -188,23 +190,48 @@ export function SignatureEditor({
             }}
           />
         </div>
+        ) : null}
 
         <div className="sig-editor__body">
-          <InlineField
-            id="sig-name"
-            label="Name"
-            value={document.fullName}
-            onChange={setName}
-            onFocus={onFieldFocus}
-            placeholder="Your name"
-            className={`sig-editor__name-input${isBold ? " sig-editor__name-input--bold" : ""}`}
-            minWidth={120}
-          />
-          {isBold && last ? (
-            <div className="sig-editor__name-hint" style={{ color: document.accentColor }}>
-              On copy: <strong>{first.toUpperCase()}</strong> · <strong>{last.toUpperCase()}</strong> (split color)
+          {isBold ? (
+            <div
+              className="sig-editor__bold-name"
+              style={{ ["--accent" as string]: document.accentColor }}
+            >
+              <InlineField
+                id="sig-name-first"
+                label="First name"
+                value={first}
+                onChange={(v) => setName(last ? `${v} ${last}` : v)}
+                onFocus={onFieldFocus}
+                placeholder="First"
+                className="sig-editor__bold-name-input sig-editor__bold-name-input--first"
+                minWidth={120}
+              />
+              <InlineField
+                id="sig-name-last"
+                label="Last name"
+                value={last}
+                onChange={(v) => setName(first ? `${first} ${v}` : v)}
+                onFocus={onFieldFocus}
+                placeholder="Last"
+                className="sig-editor__bold-name-input sig-editor__bold-name-input--last"
+                minWidth={120}
+              />
+              <div className="sig-editor__bold-rule" />
             </div>
-          ) : null}
+          ) : (
+            <InlineField
+              id="sig-name"
+              label="Name"
+              value={document.fullName}
+              onChange={setName}
+              onFocus={onFieldFocus}
+              placeholder="Your name"
+              className="sig-editor__name-input"
+              minWidth={120}
+            />
+          )}
 
           <div className="sig-editor__role">
             <InlineField

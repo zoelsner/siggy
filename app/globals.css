@@ -210,6 +210,14 @@ select {
   width: 100%;
 }
 
+.sig-editor__card--no-avatar {
+  padding: 36px 40px;
+}
+
+.sig-editor__card--no-avatar .sig-editor__body {
+  width: 100%;
+}
+
 .sig-editor__avatar-slot {
   position: relative;
   display: flex;
@@ -329,20 +337,38 @@ select {
   line-height: 1.1;
 }
 
-.sig-editor__name-input--bold {
-  font-size: 32px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.03em;
+/* Bold template — first/last name stacked, uppercase, last in accent color. */
+
+.sig-editor__bold-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 4px;
 }
 
-.sig-editor__name-hint {
-  font-size: 11px;
-  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
-  letter-spacing: 0.04em;
-  margin-top: 2px;
-  margin-bottom: 4px;
-  opacity: 0.85;
+.sig-editor__bold-name-input {
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.sig-editor__bold-name .sig-editor__bold-name-input--first {
+  color: #0f172a;
+}
+
+.sig-editor__bold-name .sig-editor__bold-name-input--last {
+  color: var(--accent, #4f46e5);
+}
+
+.sig-editor__bold-rule {
+  align-self: stretch;
+  height: 3px;
+  background: var(--accent, #4f46e5);
+  border-radius: 2px;
+  margin-top: 12px;
 }
 
 .sig-editor__role {
