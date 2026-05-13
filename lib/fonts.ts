@@ -7,11 +7,14 @@ export interface FontOption {
 
 export const fontOptions: FontOption[] = [
   { id: "dm-sans", name: "DM Sans", google: "DM+Sans" },
-  { id: "montserrat", name: "Montserrat", google: "Montserrat" },
-  { id: "plus-jakarta", name: "Plus Jakarta Sans", google: "Plus+Jakarta+Sans" },
-  { id: "unbounded", name: "Unbounded", google: "Unbounded" },
-  { id: "georgia", name: "Georgia", system: true },
-  { id: "arial", name: "Arial", system: true },
+  { id: "fraunces", name: "Fraunces", google: "Fraunces" },
+  { id: "outfit", name: "Outfit", google: "Outfit" },
+  { id: "anton", name: "Anton", google: "Anton" },
+  { id: "instrument-serif", name: "Instrument Serif", google: "Instrument+Serif" },
+  { id: "space-grotesk", name: "Space Grotesk", google: "Space+Grotesk" },
+  { id: "playfair", name: "Playfair Display", google: "Playfair+Display" },
+  { id: "bricolage", name: "Bricolage Grotesque", google: "Bricolage+Grotesque" },
+  { id: "jetbrains-mono", name: "JetBrains Mono", google: "JetBrains+Mono" },
 ];
 
 export function getFontOption(id: string): FontOption {
@@ -24,11 +27,14 @@ export function isSystemFont(id: string): boolean {
 
 export const fontFamilyMap: Record<string, string> = {
   "dm-sans": "'DM Sans', sans-serif",
-  "montserrat": "'Montserrat', sans-serif",
-  "plus-jakarta": "'Plus Jakarta Sans', sans-serif",
-  "unbounded": "'Unbounded', sans-serif",
-  "georgia": "Georgia, 'Times New Roman', serif",
-  "arial": "Arial, 'Segoe UI', 'Helvetica Neue', Helvetica, sans-serif",
+  "fraunces": "'Fraunces', 'Times New Roman', serif",
+  "outfit": "'Outfit', sans-serif",
+  "anton": "'Anton', 'Arial Narrow', 'Impact', sans-serif",
+  "instrument-serif": "'Instrument Serif', Georgia, serif",
+  "space-grotesk": "'Space Grotesk', sans-serif",
+  "playfair": "'Playfair Display', Georgia, serif",
+  "bricolage": "'Bricolage Grotesque', sans-serif",
+  "jetbrains-mono": "'JetBrains Mono', 'SF Mono', Consolas, monospace",
 };
 
 // Module-level cache for font buffers
