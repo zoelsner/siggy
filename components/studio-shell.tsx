@@ -15,7 +15,7 @@ import { touchDocument } from "@/lib/document";
 import { fontFamilyMap, fontOptions, isSystemFont } from "@/lib/fonts";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
 import { templateDefinitions } from "@/lib/templates";
-import type { AssetUploadResponse, RenderResult, SignatureDocument, SignatureImageAsset, TemplateId } from "@/lib/types";
+import type { AssetUploadResponse, ClientProfileId, RenderResult, SignatureDocument, SignatureImageAsset, TemplateId } from "@/lib/types";
 
 import { InstallGuide } from "./install-guide";
 import { SignatureEditor } from "./signature-editor";
@@ -36,6 +36,24 @@ const TEMPLATE_PILL_LABELS: Record<TemplateId, string> = {
   clean: "Clean",
 };
 const TEMPLATE_PILL_ORDER: TemplateId[] = ["bold", "edge", "card", "clean"];
+const PREVIEW_PROFILES: Array<{ id: ClientProfileId; label: string }> = [
+  { id: "gmail_web", label: "Gmail" },
+  { id: "outlook_web", label: "Outlook" },
+  { id: "apple_mail", label: "Apple Mail" },
+];
+
+function TemplateThumb({ id }: { id: TemplateId }) {
+  return (
+    <div className={`template-thumb template-thumb--${id}`} aria-hidden="true">
+      <span className="template-thumb__mark" />
+      <span className="template-thumb__lines">
+        <span />
+        <span />
+        <span />
+      </span>
+    </div>
+  );
+}
 
 export function StudioShell() {
   const { unlocked, token } = useAccess();
@@ -47,6 +65,7 @@ export function StudioShell() {
   const [isInstallOpen, setInstallOpen] = useState(false);
   const [installConfirmed, setInstallConfirmed] = useState(false);
   const [focusedLabel, setFocusedLabel] = useState<string | null>(null);
+  const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("light");
   const adapterRef = useRef(createBrowserDraftAdapter());
   const hasTrackedInputRef = useRef(false);
   const deferredDocument = useDeferredValue(document);
@@ -180,6 +199,25 @@ export function StudioShell() {
     }
   }
 
+  function handleReset() {
+    setDocument(createDefaultDocument());
+    setFocusedLabel(null);
+    trackEvent("reset_clicked", { templateId: document.templateId });
+  }
+
+  function handleExportHtml() {
+    if (!renderResult) return;
+
+    const blob = new Blob([renderResult.html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const anchor = window.document.createElement("a");
+    anchor.href = url;
+    anchor.download = "siggy-signature.html";
+    anchor.click();
+    URL.revokeObjectURL(url);
+    trackEvent("export_html_clicked", { charCount: renderResult.sizeBudget.charCount });
+  }
+
   function handleInstallConfirm() {
     if (!installConfirmed) {
       trackEvent("install_confirmed", { client: "gmail_web" });
@@ -196,42 +234,28 @@ export function StudioShell() {
   }
 
   return (
-    <main className="page-shell page-shell--wysiwyg">
+    <main className="page-shell page-shell--builder">
       <div className="topbar">
         <div className="topbar__left">
           <a href="/" className="wordmark">
             <div className="wordmark__badge">S</div>
             <span className="wordmark__title">Siggy</span>
           </a>
-        </div>
-        <div className="template-pill-switcher" role="tablist" aria-label="Template">
-          {TEMPLATE_PILL_ORDER.map((id) => {
-            const template = templateDefinitions.find((t) => t.id === id);
-            if (!template) return null;
-            const active = document.templateId === id;
-            return (
-              <button
-                key={id}
-                role="tab"
-                aria-selected={active}
-                className={`template-pill-switcher__item${active ? " template-pill-switcher__item--active" : ""}`}
-                onClick={() => {
-                  trackEvent("template_selected", { templateId: id });
-                  startTransition(() => {
-                    setDocument((current) =>
-                      touchDocument({ ...current, templateId: id }),
-                    );
-                  });
-                }}
-                title={`${TEMPLATE_PILL_LABELS[id]} — ${template.description}`}
-                type="button"
-              >
-                {TEMPLATE_PILL_LABELS[id]}
-              </button>
-            );
-          })}
+          <span className="topbar__divider" />
+          <span className="topbar__eyebrow">Email signature builder</span>
         </div>
         <div className="topbar__right">
+          <button className="button button--subtle" onClick={handleReset} type="button">
+            ↻ Reset
+          </button>
+          <button
+            className="button button--subtle"
+            disabled={!renderResult || renderState === "rendering"}
+            onClick={handleExportHtml}
+            type="button"
+          >
+            ↓ Export HTML
+          </button>
           <button
             className="button button--primary"
             disabled={!renderResult || renderState === "rendering" || isCopying}
@@ -243,68 +267,298 @@ export function StudioShell() {
         </div>
       </div>
 
-      <div className="editor-hint">
+      <section className="builder-grid">
+        <aside className="builder-panel template-rail">
+          <div className="builder-panel__header">
+            <span className="builder-panel__eyebrow">Templates</span>
+            <span className="builder-panel__count">{TEMPLATE_PILL_ORDER.length}</span>
+          </div>
+          <div className="template-list" role="tablist" aria-label="Template">
+            {TEMPLATE_PILL_ORDER.map((id) => {
+              const template = templateDefinitions.find((t) => t.id === id);
+              if (!template) return null;
+              const active = document.templateId === id;
+              return (
+                <button
+                  key={id}
+                  role="tab"
+                  aria-selected={active}
+                  className={`template-choice${active ? " template-choice--active" : ""}`}
+                  onClick={() => {
+                    trackEvent("template_selected", { templateId: id });
+                    startTransition(() => {
+                      setDocument((current) =>
+                        touchDocument({ ...current, templateId: id }),
+                      );
+                    });
+                  }}
+                  title={`${TEMPLATE_PILL_LABELS[id]} — ${template.description}`}
+                  type="button"
+                >
+                  <TemplateThumb id={id} />
+                  <span>{TEMPLATE_PILL_LABELS[id]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        <section className={`builder-preview builder-preview--${previewTheme}`}>
+          <div className="preview-toolbar">
+            <div className="preview-toolbar__group">
+              <span className="preview-toolbar__label">Preview as</span>
+              <div className="segmented-control" role="tablist" aria-label="Preview profile">
+                {PREVIEW_PROFILES.map((profile) => {
+                  const active = document.targetProfileId === profile.id;
+                  return (
+                    <button
+                      key={profile.id}
+                      className={`segmented-control__item${active ? " segmented-control__item--active" : ""}`}
+                      onClick={() =>
+                        updateDocument((current) => ({ ...current, targetProfileId: profile.id }))
+                      }
+                      type="button"
+                    >
+                      {profile.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="preview-toolbar__group">
+              <span className="preview-toolbar__label">Theme</span>
+              <div className="segmented-control" role="tablist" aria-label="Preview theme">
+                <button
+                  className={`segmented-control__item${previewTheme === "light" ? " segmented-control__item--active" : ""}`}
+                  onClick={() => setPreviewTheme("light")}
+                  type="button"
+                >
+                  Light
+                </button>
+                <button
+                  className={`segmented-control__item${previewTheme === "dark" ? " segmented-control__item--active" : ""}`}
+                  onClick={() => setPreviewTheme("dark")}
+                  type="button"
+                >
+                  Dark
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="message-canvas">
+            <article className="message-card">
+              <div className="message-card__body">
+                <span className="message-card__subject">Re: Q4 brand refresh</span>
+                <p>Hi team — wrapped the final hand-off doc this morning. Let me know if you'd like to walk through it before Friday's review. Thanks!</p>
+                <p>— Sarah</p>
+              </div>
+              <div className="message-card__rule" />
+              <div className="message-card__signature">
+                <SignatureEditor
+                  document={document}
+                  imageUrl={document.image?.url ?? null}
+                  unlocked={unlocked}
+                  onChange={updateDocument}
+                  onFieldFocus={setFocusedLabel}
+                  onImageUploaded={handleImageUploaded}
+                  onImageRemoved={handleImageRemoved}
+                />
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <aside className="builder-panel inspector-panel">
+          <details className="inspector-section" open>
+            <summary>
+              <span>Style</span>
+            </summary>
+            <div className="field">
+              <label>Font</label>
+              <div className="inspector-font-grid">
+                {fontOptions.slice(0, 6).map((font) => (
+                  <button
+                    key={font.id}
+                    className={`inspector-font${document.fontFamily === font.id ? " inspector-font--active" : ""}`}
+                    onClick={() =>
+                      updateDocument((current) => ({ ...current, fontFamily: font.id }))
+                    }
+                    style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
+                    type="button"
+                  >
+                    {font.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="field">
+              <label>Accent</label>
+              <div className="inspector-swatches">
+                {accentChoices.map((choice) => (
+                  <button
+                    key={choice}
+                    aria-label={`Use ${choice}`}
+                    className={`inspector-swatch${document.accentColor === choice ? " inspector-swatch--active" : ""}`}
+                    onClick={() =>
+                      updateDocument((current) => ({ ...current, accentColor: choice }))
+                    }
+                    style={{ backgroundColor: choice }}
+                    type="button"
+                  />
+                ))}
+              </div>
+            </div>
+          </details>
+
+          <details className="inspector-section" open>
+            <summary>
+              <span>Details</span>
+            </summary>
+            <div className="field">
+              <label htmlFor="fullName">Full name</label>
+              <input
+                id="fullName"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    fullName: event.target.value
+                  }))
+                }
+                value={document.fullName}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="jobTitle">Title</label>
+              <input
+                id="jobTitle"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    jobTitle: event.target.value
+                  }))
+                }
+                value={document.jobTitle}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="company">Company</label>
+              <input
+                id="company"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    company: event.target.value
+                  }))
+                }
+                value={document.company}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    email: event.target.value
+                  }))
+                }
+                value={document.email}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="phone">Phone</label>
+              <input
+                id="phone"
+                type="tel"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    phone: event.target.value
+                  }))
+                }
+                value={document.phone}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="website">Website</label>
+              <input
+                id="website"
+                type="url"
+                onChange={(event) =>
+                  updateDocument((current) => ({
+                    ...current,
+                    website: event.target.value
+                  }))
+                }
+                value={document.website}
+              />
+            </div>
+          </details>
+
+          <details className="inspector-section">
+            <summary>
+              <span>Headshot & links</span>
+            </summary>
+            <p className="helper-text">Add a headshot directly from the signature preview. Optional fields still live behind the inline + Add field control.</p>
+          </details>
+
+          <div className="inspector-install">
+            <InstallGuide
+              isConfirmed={installConfirmed}
+              isOpen={isInstallOpen}
+              onConfirmInstall={handleInstallConfirm}
+              onToggle={handleInstallToggle}
+            />
+          </div>
+        </aside>
+      </section>
+
+      <div className="editor-hint builder-editing-hint">
         {focusedLabel ? (
           <span className="editor-hint__editing">
             Editing — <strong>{focusedLabel}</strong>
           </span>
         ) : (
-          <span>Tip — click any text below to edit it in place</span>
+          <span>Click signature text in the preview to edit in place</span>
         )}
       </div>
 
-      <div className="wysiwyg-stage">
-        <SignatureEditor
-          document={document}
-          imageUrl={document.image?.url ?? null}
-          unlocked={unlocked}
-          onChange={updateDocument}
-          onFieldFocus={setFocusedLabel}
-          onImageUploaded={handleImageUploaded}
-          onImageRemoved={handleImageRemoved}
-        />
-
-        <div className="style-pill" role="toolbar" aria-label="Style">
-          <span className="style-pill__label">Font</span>
-          <div className="style-pill__fonts">
-            {fontOptions.map((font) => (
-              <button
-                key={font.id}
-                className={`style-pill__font${document.fontFamily === font.id ? " style-pill__font--active" : ""}`}
-                onClick={() =>
-                  updateDocument((current) => ({ ...current, fontFamily: font.id }))
-                }
-                style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
-                type="button"
-              >
-                {font.name}
-              </button>
-            ))}
-          </div>
-          <span className="style-pill__divider" />
-          <span className="style-pill__label">Color</span>
-          <div className="style-pill__swatches">
-            {accentChoices.map((choice) => (
-              <button
-                key={choice}
-                aria-label={`Use ${choice}`}
-                className={`style-pill__swatch${document.accentColor === choice ? " style-pill__swatch--active" : ""}`}
-                onClick={() =>
-                  updateDocument((current) => ({ ...current, accentColor: choice }))
-                }
-                style={{ backgroundColor: choice }}
-                type="button"
-              />
-            ))}
-          </div>
+      <div className="builder-mobile-style" role="toolbar" aria-label="Style">
+        <span className="style-pill__label">Font</span>
+        <div className="style-pill__fonts">
+          {fontOptions.map((font) => (
+            <button
+              key={font.id}
+              className={`style-pill__font${document.fontFamily === font.id ? " style-pill__font--active" : ""}`}
+              onClick={() =>
+                updateDocument((current) => ({ ...current, fontFamily: font.id }))
+              }
+              style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
+              type="button"
+            >
+              {font.name}
+            </button>
+          ))}
         </div>
-
-        <InstallGuide
-          isConfirmed={installConfirmed}
-          isOpen={isInstallOpen}
-          onConfirmInstall={handleInstallConfirm}
-          onToggle={handleInstallToggle}
-        />
+        <span className="style-pill__divider" />
+        <span className="style-pill__label">Color</span>
+        <div className="style-pill__swatches">
+          {accentChoices.map((choice) => (
+            <button
+              key={choice}
+              aria-label={`Use ${choice}`}
+              className={`style-pill__swatch${document.accentColor === choice ? " style-pill__swatch--active" : ""}`}
+              onClick={() =>
+                updateDocument((current) => ({ ...current, accentColor: choice }))
+              }
+              style={{ backgroundColor: choice }}
+              type="button"
+            />
+          ))}
+        </div>
       </div>
 
       <footer className="site-footer">

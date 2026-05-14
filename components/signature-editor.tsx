@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { fontFamilyMap } from "@/lib/fonts";
 import { splitName } from "@/lib/templates";
@@ -19,6 +19,23 @@ interface SignatureEditorProps {
 }
 
 type OptionalFieldKey = "phone" | "website" | "linkedin" | "x" | "instagram" | "github" | "cta";
+type CropDraft = {
+  file: File;
+  url: string;
+  x: number;
+  y: number;
+  scale: number;
+};
+type CropDrag = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  originX: number;
+  originY: number;
+};
+
+const CROP_PREVIEW_SIZE = 224;
+const CROP_OUTPUT_SIZE = 512;
 
 const SOCIAL_LABEL: Record<SocialPlatform, string> = {
   linkedin: "LinkedIn",
@@ -52,6 +69,47 @@ function updateSocial(doc: SignatureDocument, platform: SocialPlatform, url: str
   };
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getCroppedImageBlob(draft: CropDraft): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = window.document.createElement("canvas");
+      canvas.width = CROP_OUTPUT_SIZE;
+      canvas.height = CROP_OUTPUT_SIZE;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        reject(new Error("Canvas unavailable"));
+        return;
+      }
+
+      context.clearRect(0, 0, CROP_OUTPUT_SIZE, CROP_OUTPUT_SIZE);
+      const baseScale = Math.max(CROP_OUTPUT_SIZE / image.naturalWidth, CROP_OUTPUT_SIZE / image.naturalHeight);
+      const drawScale = baseScale * draft.scale;
+      const drawWidth = image.naturalWidth * drawScale;
+      const drawHeight = image.naturalHeight * drawScale;
+      const offsetScale = CROP_OUTPUT_SIZE / CROP_PREVIEW_SIZE;
+      const dx = (CROP_OUTPUT_SIZE - drawWidth) / 2 + draft.x * offsetScale;
+      const dy = (CROP_OUTPUT_SIZE - drawHeight) / 2 + draft.y * offsetScale;
+
+      context.drawImage(image, dx, dy, drawWidth, drawHeight);
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Crop failed"));
+          return;
+        }
+        resolve(blob);
+      }, "image/png");
+    };
+    image.onerror = () => reject(new Error("Image load failed"));
+    image.src = draft.url;
+  });
+}
+
 export function SignatureEditor({
   document,
   imageUrl,
@@ -65,7 +123,17 @@ export function SignatureEditor({
   const [addOpen, setAddOpen] = useState(false);
   const [isUploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [cropDraft, setCropDraft] = useState<CropDraft | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cropDragRef = useRef<CropDrag | null>(null);
+  const cropDraftRef = useRef<CropDraft | null>(null);
+
+  cropDraftRef.current = cropDraft;
+  useEffect(() => {
+    return () => {
+      if (cropDraftRef.current) URL.revokeObjectURL(cropDraftRef.current.url);
+    };
+  }, []);
 
   const isBold = document.templateId === "bold";
   const isEdge = document.templateId === "edge";
@@ -125,12 +193,40 @@ export function SignatureEditor({
     setAddOpen(false);
   }
 
+  function clearCropDraft() {
+    if (cropDraft) URL.revokeObjectURL(cropDraft.url);
+    setCropDraft(null);
+    cropDragRef.current = null;
+  }
+
+  function handleImageSelected(file: File) {
+    setImageError(null);
+    if (!/^image\/(png|jpeg|webp)$/i.test(file.type)) {
+      setImageError("Use a PNG, JPEG, or WebP image.");
+      return;
+    }
+    if (file.size > 4_000_000) {
+      setImageError("Image must be smaller than 4MB.");
+      return;
+    }
+
+    if (cropDraft) URL.revokeObjectURL(cropDraft.url);
+    setCropDraft({
+      file,
+      url: URL.createObjectURL(file),
+      x: 0,
+      y: 0,
+      scale: 1,
+    });
+  }
+
   async function handleImagePicked(file: File) {
     setUploading(true);
     setImageError(null);
     try {
       const form = new FormData();
       form.append("file", file);
+      form.append("alt", `${document.fullName} headshot`);
       const res = await fetch("/api/assets", { method: "POST", body: form });
       if (!res.ok) throw new Error("Upload failed");
       const data = (await res.json()) as AssetUploadResponse;
@@ -139,6 +235,49 @@ export function SignatureEditor({
       setImageError("Upload failed — try a smaller image.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function applyCrop() {
+    if (!cropDraft || isUploading) return;
+
+    try {
+      const blob = await getCroppedImageBlob(cropDraft);
+      const croppedFile = new File([blob], "siggy-headshot-crop.png", { type: "image/png" });
+      clearCropDraft();
+      await handleImagePicked(croppedFile);
+    } catch {
+      setImageError("Crop failed — try a different image.");
+    }
+  }
+
+  function handleCropPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (!cropDraft) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    cropDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: cropDraft.x,
+      originY: cropDraft.y,
+    };
+  }
+
+  function handleCropPointerMove(event: PointerEvent<HTMLDivElement>) {
+    const drag = cropDragRef.current;
+    if (!cropDraft || !drag || drag.pointerId !== event.pointerId) return;
+
+    const limit = 96 * cropDraft.scale;
+    setCropDraft({
+      ...cropDraft,
+      x: clamp(drag.originX + event.clientX - drag.startX, -limit, limit),
+      y: clamp(drag.originY + event.clientY - drag.startY, -limit, limit),
+    });
+  }
+
+  function handleCropPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (cropDragRef.current?.pointerId === event.pointerId) {
+      cropDragRef.current = null;
     }
   }
 
@@ -158,6 +297,14 @@ export function SignatureEditor({
       {imageUrl ? (
         <div className="sig-editor__avatar sig-editor__avatar--photo">
           <img alt={document.image?.alt ?? document.fullName} src={imageUrl} />
+          <button
+            aria-label="Change headshot"
+            className="sig-editor__avatar-change"
+            onClick={() => fileInputRef.current?.click()}
+            type="button"
+          >
+            Adjust
+          </button>
           <button
             aria-label="Remove headshot"
             className="sig-editor__avatar-remove"
@@ -188,11 +335,11 @@ export function SignatureEditor({
         style={{ display: "none" }}
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) void handleImagePicked(file);
-          e.target.value = "";
-        }}
-      />
-    </div>
+              if (file) handleImageSelected(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
   ) : null;
 
   const socialsBlock = hasSocials ? (
@@ -284,6 +431,7 @@ export function SignatureEditor({
   ) : null;
 
   return (
+    <>
     <div className="sig-editor" style={{ fontFamily }}>
       <div
         className={`sig-editor__card sig-editor__card--${document.templateId}${supportsImage ? "" : " sig-editor__card--no-avatar"}`}
@@ -648,5 +796,62 @@ export function SignatureEditor({
         ) : null}
       </div>
     </div>
+    {cropDraft ? (
+      <div className="image-cropper" role="dialog" aria-modal="true" aria-label="Crop headshot">
+        <div className="image-cropper__panel">
+          <div className="image-cropper__header">
+            <div>
+              <h2>Adjust headshot</h2>
+              <p>Drag to reposition. Zoom until it feels right.</p>
+            </div>
+            <button className="image-cropper__close" onClick={clearCropDraft} type="button" aria-label="Close cropper">
+              ×
+            </button>
+          </div>
+          <div
+            className={`image-cropper__stage image-cropper__stage--${isCard ? "square" : "round"}`}
+            onPointerDown={handleCropPointerDown}
+            onPointerMove={handleCropPointerMove}
+            onPointerUp={handleCropPointerUp}
+            onPointerCancel={handleCropPointerUp}
+          >
+            <img
+              alt=""
+              src={cropDraft.url}
+              style={{
+                transform: `translate(${cropDraft.x}px, ${cropDraft.y}px) scale(${cropDraft.scale})`,
+              }}
+            />
+          </div>
+          <label className="image-cropper__zoom">
+            <span>Zoom</span>
+            <input
+              type="range"
+              min="1"
+              max="2.8"
+              step="0.01"
+              value={cropDraft.scale}
+              onChange={(event) =>
+                setCropDraft({
+                  ...cropDraft,
+                  scale: Number(event.target.value),
+                  x: clamp(cropDraft.x, -96 * Number(event.target.value), 96 * Number(event.target.value)),
+                  y: clamp(cropDraft.y, -96 * Number(event.target.value), 96 * Number(event.target.value)),
+                })
+              }
+            />
+          </label>
+          <div className="image-cropper__actions">
+            <button className="button button--subtle" onClick={clearCropDraft} type="button">
+              Cancel
+            </button>
+            <button className="button button--primary" disabled={isUploading} onClick={() => void applyCrop()} type="button">
+              {isUploading ? "Saving…" : "Use photo"}
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }

@@ -6,6 +6,8 @@ node_modules/
 screenshots/
 competitive-analysis.html
 coverage
+playwright-report/
+test-results/
 .vercel
 .env*.local
 .DS_Store
