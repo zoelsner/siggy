@@ -10,7 +10,7 @@ const baseSocials: SocialLink[] = [
 export function createDefaultDocument(): SignatureDocument {
   return {
     version: 1,
-    templateId: "edge",
+    templateId: "bold",
     targetProfileId: "gmail_web",
     fullName: "Sarah Chen",
     jobTitle: "Head of Design",

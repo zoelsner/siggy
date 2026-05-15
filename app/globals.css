@@ -331,33 +331,7 @@ select {
   border-radius: 14px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(29, 27, 25, 0.04), 0 18px 48px rgba(29, 27, 25, 0.10);
-  padding: 28px 30px;
-}
-
-.message-card__body {
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.message-card__body p {
-  margin: 6px 0 0;
-}
-
-.message-card__subject {
-  display: block;
-  margin-bottom: 8px;
-  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-soft);
-}
-
-.message-card__rule {
-  height: 1px;
-  background: var(--border);
-  margin: 18px 0;
+  padding: 22px 30px;
 }
 
 .message-card__signature .sig-editor {
@@ -448,7 +422,7 @@ select {
 .inspector-font-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 7px;
 }
 
 .inspector-font {
@@ -458,9 +432,15 @@ select {
   background: #fff;
   color: var(--text);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 13px;
   font-weight: 600;
-  padding: 9px 8px;
+  line-height: 1.05;
+  min-height: 38px;
+  padding: 7px 8px;
+  text-align: center;
 }
 
 .inspector-font--active {
@@ -885,14 +865,14 @@ select {
   flex-direction: column;
   align-items: flex-start;
   gap: 0;
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 
 .sig-editor__bold-name-input {
-  font-size: 44px;
+  font-size: 38px;
   font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 0.95;
+  letter-spacing: -0.06em;
+  line-height: 0.84;
   text-transform: uppercase;
 }
 
@@ -902,6 +882,7 @@ select {
 
 .sig-editor__bold-name .sig-editor__bold-name-input--last {
   color: var(--accent, #4f46e5);
+  margin-top: -10px;
 }
 
 .sig-editor__bold-rule {
@@ -909,7 +890,7 @@ select {
   height: 3px;
   background: var(--accent, #4f46e5);
   border-radius: 2px;
-  margin-top: 12px;
+  margin-top: 5px;
 }
 
 .sig-editor__role {
@@ -917,7 +898,7 @@ select {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .sig-editor__role-input {
@@ -936,7 +917,7 @@ select {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 6px;
 }
 
 .sig-editor__contact-input {
@@ -1012,7 +993,7 @@ select {
 }
 
 .sig-editor__add-wrap {
-  margin-top: 16px;
+  margin-top: 9px;
   position: relative;
 }
 
@@ -1066,7 +1047,7 @@ select {
 }
 
 .sig-editor__watermark {
-  margin-top: 18px;
+  margin-top: 9px;
   font-size: 12px;
   color: #94a3b8;
 }
@@ -1077,11 +1058,11 @@ select {
   font-weight: 600;
 }
 
-/* Edge template — accent rail, photo, and icon-prefixed contact rows. */
+/* Underline template — split-color name, soft highlight, and compact contact rows. */
 
 .sig-editor__card--edge {
-  width: auto;
-  max-width: 640px;
+  width: min(420px, 100%);
+  max-width: 560px;
   padding: 0;
   gap: 0;
   border-radius: 0;
@@ -1090,101 +1071,133 @@ select {
   align-items: stretch;
 }
 
-.sig-editor__edge-bar {
-  width: 5px;
-  border-radius: 3px;
-  background: var(--accent, #4f46e5);
-  flex-shrink: 0;
-}
-
-.sig-editor__edge-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding-left: 20px;
-}
-
-.sig-editor__card--edge .sig-editor__avatar-slot {
-  align-items: flex-start;
-}
-
-.sig-editor__card--edge .sig-editor__avatar,
-.sig-editor__card--edge .sig-editor__avatar--photo {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  font-size: 25px;
-}
-
-.sig-editor__edge-body {
+.sig-editor__underline-body {
   gap: 0;
 }
 
-.sig-editor__edge-body .sig-editor__edge-name-input--accent {
-  color: var(--accent, #4f46e5);
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+.sig-editor__underline-name {
+  display: inline-block;
+  width: fit-content;
 }
 
-.sig-editor__edge-role {
+.sig-editor__underline-name-line {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0;
+  row-gap: 0;
+}
+
+.sig-editor__underline-name .sig-editor__underline-name-input {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.sig-editor__underline-name .sig-editor__underline-name-input--first {
+  color: #0f172a;
+}
+
+.sig-editor__underline-name .sig-editor__underline-name-input--last {
+  color: var(--accent, #4f46e5);
+  margin-left: -8px;
+}
+
+.sig-editor__underline-highlight {
+  height: 8px;
+  margin-top: -6px;
+  border-radius: 2px;
+  background: var(--accent, #4f46e5);
+  opacity: 0.22;
+}
+
+.sig-editor__underline-role {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  margin-top: 4px;
+  gap: 6px;
+  margin-top: 8px;
   color: #475569;
   font-size: 13px;
 }
 
-.sig-editor__edge-role .sig-editor__edge-role-input {
+.sig-editor__underline-role .sig-editor__underline-role-input {
   color: #475569;
   font-size: 13px;
 }
 
-.sig-editor__edge-contacts {
+.sig-editor__underline-role .sig-editor__underline-role-input--title {
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sig-editor__underline-role > span {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.sig-editor__underline-rule {
+  width: 100%;
+  height: 1px;
+  margin: 8px 0 9px;
+  background: #e2e8f0;
+}
+
+.sig-editor__underline-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.sig-editor__underline-contacts {
   display: grid;
-  gap: 4px;
-  margin-top: 12px;
+  gap: 3px;
+  min-width: 0;
 }
 
-.sig-editor__edge-contact-row {
+.sig-editor__underline-contact-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 18px;
+  min-height: 17px;
 }
 
-.sig-editor__edge-icon {
+.sig-editor__underline-icon {
   width: 14px;
   color: #94a3b8;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
   flex-shrink: 0;
 }
 
-.sig-editor__edge-contact-row .sig-editor__edge-contact-input {
+.sig-editor__underline-contact-row .sig-editor__underline-contact-input {
   color: #475569;
   font-size: 13px;
   line-height: 1.25;
 }
 
-.sig-editor__edge-contact-row .sig-editor__edge-contact-input--accent {
+.sig-editor__underline-contact-row .sig-editor__underline-contact-input--accent {
   color: var(--accent, #4f46e5);
 }
 
-/* Card template — bordered two-cell frame with tinted image panel. */
+/* Card template — large tinted visual panel with details anchored to the right. */
 
 .sig-editor__card--card {
   width: auto;
   max-width: 640px;
   padding: 0;
-  gap: 0;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
+  gap: 28px;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
   box-shadow: none;
   align-items: stretch;
 }
@@ -1193,30 +1206,31 @@ select {
   justify-content: center;
   align-items: center;
   align-self: stretch;
-  min-width: 108px;
-  padding: 14px;
-  background: #f8fafc;
-  border-radius: 12px 0 0 12px;
+  min-width: 150px;
+  padding: 34px 28px;
+  background: #f4f4f8;
+  border-radius: 12px;
 }
 
 .sig-editor__card--card .sig-editor__avatar,
 .sig-editor__card--card .sig-editor__avatar--photo {
-  width: 80px;
-  height: 80px;
-  border-radius: 12px;
-  font-size: 28px;
+  width: 94px;
+  height: 94px;
+  border-radius: 14px;
+  font-size: 32px;
 }
 
 .sig-editor__card-body {
   gap: 0;
-  padding: 18px 20px;
+  min-width: 360px;
+  padding: 20px 0;
 }
 
 .sig-editor__card-body .sig-editor__card-name-input--accent {
   color: var(--accent, #4f46e5);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1.15;
 }
 
@@ -1229,8 +1243,8 @@ select {
 }
 
 .sig-editor__card-role .sig-editor__card-role-input {
-  color: #475569;
-  font-size: 13px;
+  color: #0f172a;
+  font-size: 14px;
   line-height: 1.25;
 }
 
@@ -1240,17 +1254,17 @@ select {
 }
 
 .sig-editor__card-rule {
-  width: 140px;
+  width: 100%;
   height: 1px;
-  margin: 10px 0;
+  margin: 14px 0;
   background: #e2e8f0;
 }
 
 .sig-editor__card-contacts {
   display: grid;
   gap: 0;
-  color: #475569;
-  font-size: 12px;
+  color: #0f172a;
+  font-size: 13px;
   line-height: 20px;
 }
 
@@ -1262,8 +1276,8 @@ select {
 }
 
 .sig-editor__card-contacts .sig-editor__card-contact-input {
-  color: #475569;
-  font-size: 12px;
+  color: #0f172a;
+  font-size: 13px;
 }
 
 .sig-editor__card-contacts .sig-editor__card-contact-input--accent {
@@ -1285,7 +1299,7 @@ select {
   transform: none;
 }
 
-/* Clean template — pure text, no editor card chrome. */
+/* Minimal template — pure text, no editor card chrome. */
 
 .sig-editor__card--clean {
   width: auto;
@@ -1302,8 +1316,8 @@ select {
 
 .sig-editor__clean-body .sig-editor__clean-name-input--accent {
   color: var(--accent, #4f46e5);
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
   line-height: 1.25;
 }
 
@@ -1311,20 +1325,20 @@ select {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 3px;
+  gap: 0;
   margin-top: 2px;
-  color: #475569;
-  font-size: 13px;
+  color: #0f172a;
+  font-size: 14px;
 }
 
 .sig-editor__clean-role .sig-editor__clean-role-input {
-  color: #475569;
-  font-size: 13px;
+  color: #0f172a;
+  font-size: 14px;
 }
 
 .sig-editor__clean-role > span {
-  margin-left: -2px;
-  margin-right: 3px;
+  margin-left: -3px;
+  margin-right: 5px;
 }
 
 .sig-editor__clean-contacts {
@@ -1332,15 +1346,15 @@ select {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 8px;
-  color: #94a3b8;
-  font-size: 12px;
+  margin-top: 16px;
+  color: #0f172a;
+  font-size: 13px;
   line-height: 1.7;
 }
 
 .sig-editor__clean-contacts .sig-editor__clean-contact-input {
-  color: #475569;
-  font-size: 12px;
+  color: #0f172a;
+  font-size: 13px;
 }
 
 .sig-editor__clean-contact-sep {
@@ -1377,7 +1391,7 @@ select {
 .sig-editor__card--edge .sig-editor__watermark,
 .sig-editor__card--card .sig-editor__watermark,
 .sig-editor__card--clean .sig-editor__watermark {
-  margin-top: 16px;
+  margin-top: 10px;
 }
 
 /* ---- Inline editable text input ---- */
@@ -1436,12 +1450,18 @@ select {
     text-align: left;
   }
 
-  .sig-editor__card--edge .sig-editor__edge-content {
-    flex-direction: row;
+  .sig-editor__underline-bottom {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .sig-editor__card--card .sig-editor__avatar-slot {
     align-self: stretch;
+  }
+
+  .sig-editor__card-body {
+    min-width: 0;
   }
 
   .sig-editor__card--clean {
@@ -2485,81 +2505,86 @@ select {
   align-items: center;
 }
 
-/* Edge */
+/* Underline */
 
 .tpl-preview--edge {
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.tpl-edge__bar {
-  width: 3px;
-  align-self: stretch;
-  background: var(--accent);
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.tpl-edge__content {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-}
-
-.tpl-edge__avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: white;
-}
-
-.tpl-edge__details {
-  display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: stretch;
+  gap: 0;
+}
+
+.tpl-edge__name-wrap {
+  display: inline-block;
+  align-self: flex-start;
 }
 
 .tpl-edge__name {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
   font-family: "DM Sans", sans-serif;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.tpl-edge__last {
   color: var(--accent);
-  letter-spacing: -0.02em;
+}
+
+.tpl-edge__highlight {
+  height: 5px;
+  margin-top: -4px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.22;
 }
 
 .tpl-edge__title {
-  font-size: 8px;
+  display: flex;
+  gap: 5px;
+  margin-top: 9px;
+  font-size: 8.5px;
   color: #475569;
+}
+
+.tpl-edge__title strong {
+  color: #0f172a;
+  letter-spacing: 0.08em;
+}
+
+.tpl-edge__rule {
+  height: 1px;
+  margin: 10px 0;
+  background: #e2e8f0;
+}
+
+.tpl-edge__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .tpl-edge__contact {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-top: 6px;
+  display: grid;
+  gap: 3px;
+  padding-top: 0;
+  font-size: 7.5px;
+  color: #475569;
 }
 
 .tpl-edge__link {
-  font-size: 7.5px;
   color: var(--accent);
-}
-
-.tpl-edge__phone {
-  font-size: 7.5px;
-  color: #475569;
 }
 
 .tpl-edge__socials {
   display: flex;
   gap: 4px;
-  padding-top: 4px;
+  align-self: flex-end;
+  padding-top: 0;
   font-size: 6.5px;
   font-weight: 700;
   text-transform: uppercase;
@@ -2746,7 +2771,7 @@ select {
   color: #475569;
 }
 
-/* Clean */
+/* Minimal */
 
 .tpl-preview--clean {
   flex-direction: column;

@@ -19,26 +19,29 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-function EdgePreview({ name }: { name: string }) {
+function UnderlinePreview({ name }: { name: string }) {
+  const { first, last } = splitName(name);
   return (
     <div className="tpl-preview tpl-preview--edge">
-      <div className="tpl-edge__bar" />
-      <div className="tpl-edge__content">
-        <div className="tpl-edge__avatar">
-          <span>{getInitials(name)}</span>
+      <div className="tpl-edge__name-wrap">
+        <div className="tpl-edge__name">
+          <span>{first}</span>
+          {last ? <span className="tpl-edge__last">{last}</span> : null}
         </div>
-        <div className="tpl-edge__details">
-          <div className="tpl-edge__name">{name}</div>
-          <div className="tpl-edge__title">Head of Design at Meridian</div>
-          <div className="tpl-edge__contact">
-            <span className="tpl-edge__link">sarah@meridian.design</span>
-            <span className="tpl-edge__phone">+1 (415) 555-0142</span>
-          </div>
-          <div className="tpl-edge__socials">
-            <span>LinkedIn</span>
-            <span className="tpl-edge__dot">&middot;</span>
-            <span>X</span>
-          </div>
+        <div className="tpl-edge__highlight" />
+      </div>
+      <div className="tpl-edge__title"><strong>HEAD OF DESIGN</strong><span>&middot;</span>Meridian Studio</div>
+      <div className="tpl-edge__rule" />
+      <div className="tpl-edge__footer">
+        <div className="tpl-edge__contact">
+          <span className="tpl-edge__link">sarah@meridian.design</span>
+          <span>+1 (415) 555-0142</span>
+          <span>meridian.design</span>
+        </div>
+        <div className="tpl-edge__socials">
+          <span>LinkedIn</span>
+          <span className="tpl-edge__dot">&middot;</span>
+          <span>X</span>
         </div>
       </div>
     </div>
@@ -118,10 +121,10 @@ function CleanPreview({ name }: { name: string }) {
 }
 
 const templates = [
-  { id: "edge", name: "Edge", desc: "Accent bar + photo + icon contacts", Preview: EdgePreview },
   { id: "bold", name: "Bold", desc: "Massive split-color name as hero", Preview: BoldPreview },
-  { id: "card", name: "Card", desc: "Framed card with tinted photo panel", Preview: CardPreview },
-  { id: "clean", name: "Clean", desc: "Pure text, zero decoration", Preview: CleanPreview },
+  { id: "edge", name: "Underline", desc: "Soft highlight underline + compact contacts", Preview: UnderlinePreview },
+  { id: "card", name: "Card", desc: "Visual anchor with a tinted headshot panel", Preview: CardPreview },
+  { id: "clean", name: "Minimal", desc: "Pure text, accent name, zero chrome", Preview: CleanPreview },
 ];
 
 export function Templates() {

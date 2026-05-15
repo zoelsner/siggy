@@ -21,19 +21,20 @@ import { InstallGuide } from "./install-guide";
 import { SignatureEditor } from "./signature-editor";
 
 const accentChoices = [
+  "#1d1b19", // Charcoal   — neutral
   "#1e3a8a", // Navy       — professional
   "#9f1239", // Burgundy   — professional
   "#4f46e5", // Indigo     — bridge (default)
-  "#0d9488", // Teal       — bridge
+  "#334155", // Slate      — neutral
   "#059669", // Emerald    — creator
   "#ea580c", // Sunset     — creator
 ];
 
 const TEMPLATE_PILL_LABELS: Record<TemplateId, string> = {
   bold: "Bold",
-  edge: "Profile",
+  edge: "Underline",
   card: "Card",
-  clean: "Clean",
+  clean: "Minimal",
 };
 const TEMPLATE_PILL_ORDER: TemplateId[] = ["bold", "edge", "card", "clean"];
 const PREVIEW_PROFILES: Array<{ id: ClientProfileId; label: string }> = [
@@ -64,7 +65,6 @@ export function StudioShell() {
   const [isCopying, setIsCopying] = useState(false);
   const [isInstallOpen, setInstallOpen] = useState(false);
   const [installConfirmed, setInstallConfirmed] = useState(false);
-  const [focusedLabel, setFocusedLabel] = useState<string | null>(null);
   const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("light");
   const adapterRef = useRef(createBrowserDraftAdapter());
   const hasTrackedInputRef = useRef(false);
@@ -201,7 +201,6 @@ export function StudioShell() {
 
   function handleReset() {
     setDocument(createDefaultDocument());
-    setFocusedLabel(null);
     trackEvent("reset_clicked", { templateId: document.templateId });
   }
 
@@ -348,19 +347,13 @@ export function StudioShell() {
 
           <div className="message-canvas">
             <article className="message-card">
-              <div className="message-card__body">
-                <span className="message-card__subject">Re: Q4 brand refresh</span>
-                <p>Hi team — wrapped the final hand-off doc this morning. Let me know if you'd like to walk through it before Friday's review. Thanks!</p>
-                <p>— Sarah</p>
-              </div>
-              <div className="message-card__rule" />
               <div className="message-card__signature">
                 <SignatureEditor
                   document={document}
                   imageUrl={document.image?.url ?? null}
                   unlocked={unlocked}
                   onChange={updateDocument}
-                  onFieldFocus={setFocusedLabel}
+                  onFieldFocus={() => undefined}
                   onImageUploaded={handleImageUploaded}
                   onImageRemoved={handleImageRemoved}
                 />
@@ -377,7 +370,7 @@ export function StudioShell() {
             <div className="field">
               <label>Font</label>
               <div className="inspector-font-grid">
-                {fontOptions.slice(0, 6).map((font) => (
+                {fontOptions.map((font) => (
                   <button
                     key={font.id}
                     className={`inspector-font${document.fontFamily === font.id ? " inspector-font--active" : ""}`}
@@ -515,16 +508,6 @@ export function StudioShell() {
           </div>
         </aside>
       </section>
-
-      <div className="editor-hint builder-editing-hint">
-        {focusedLabel ? (
-          <span className="editor-hint__editing">
-            Editing — <strong>{focusedLabel}</strong>
-          </span>
-        ) : (
-          <span>Click signature text in the preview to edit in place</span>
-        )}
-      </div>
 
       <div className="builder-mobile-style" role="toolbar" aria-label="Style">
         <span className="style-pill__label">Font</span>
