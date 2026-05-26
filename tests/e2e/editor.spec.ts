@@ -23,6 +23,7 @@ test.describe("editor", () => {
 
   test("inspector fields update the live signature preview", async ({ page }) => {
     await openFreshEditor(page);
+    await page.getByRole("tab", { name: "Underline" }).click();
 
     await page.getByLabel("Full name").fill("Alex Morgan");
     await page.getByLabel("Title").fill("Design Lead");
@@ -32,7 +33,8 @@ test.describe("editor", () => {
     await page.getByLabel("Website").fill("northstar.test");
 
     const signature = page.locator(".message-card__signature");
-    await expect(signature.locator("#sig-name")).toHaveValue("Alex Morgan");
+    await expect(signature.locator("#sig-name-first")).toHaveValue("Alex");
+    await expect(signature.locator("#sig-name-last")).toHaveValue("Morgan");
     await expect(signature.locator("#sig-job")).toHaveValue("Design Lead");
     await expect(signature.locator("#sig-company")).toHaveValue("Northstar Labs");
     await expect(signature.locator("#sig-email")).toHaveValue("alex@northstar.test");
@@ -45,15 +47,15 @@ test.describe("editor", () => {
 
     const signature = page.locator(".message-card__signature");
 
-    await page.getByRole("tab", { name: "Profile" }).click();
+    await page.getByRole("tab", { name: "Underline" }).click();
     await expect(signature.locator(".sig-editor__card--edge")).toBeVisible();
-    await expect(signature.locator(".sig-editor__edge-bar")).toBeVisible();
+    await expect(signature.locator(".sig-editor__underline-highlight")).toBeVisible();
 
     await page.getByRole("tab", { name: "Card" }).click();
     await expect(signature.locator(".sig-editor__card--card")).toBeVisible();
     await expect(signature.locator(".sig-editor__card-rule")).toBeVisible();
 
-    await page.getByRole("tab", { name: "Clean" }).click();
+    await page.getByRole("tab", { name: "Minimal" }).click();
     await expect(signature.locator(".sig-editor__card--clean")).toBeVisible();
     await expect(signature.locator("#sig-name")).toHaveValue("Sarah Chen");
 
@@ -97,8 +99,8 @@ test.describe("editor", () => {
     await openFreshEditor(page);
 
     const signature = page.locator(".message-card__signature");
-    await page.getByRole("tab", { name: "Profile" }).click();
-    await expect(signature.locator(".sig-editor__card--edge")).toBeVisible();
+    await page.getByRole("tab", { name: "Card" }).click();
+    await expect(signature.locator(".sig-editor__card--card")).toBeVisible();
 
     await signature.locator('input[type="file"]').setInputFiles({
       name: "headshot.png",

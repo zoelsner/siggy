@@ -139,7 +139,7 @@ export function SignatureEditor({
   const isEdge = document.templateId === "edge";
   const isCard = document.templateId === "card";
   const isClean = document.templateId === "clean";
-  const supportsImage = document.templateId === "edge" || document.templateId === "card";
+  const supportsImage = document.templateId === "card";
   const fontFamily = fontFamilyMap[document.fontFamily] ?? fontFamilyMap["dm-sans"];
 
   const visible = useMemo(() => {
@@ -438,94 +438,108 @@ export function SignatureEditor({
         style={{ ["--accent" as string]: document.accentColor }}
       >
         {isEdge ? (
-          <>
-            <div className="sig-editor__edge-bar" aria-hidden="true" />
-            <div className="sig-editor__edge-content">
-              {avatarSlot}
-              <div className="sig-editor__body sig-editor__edge-body">
+          <div className="sig-editor__body sig-editor__underline-body">
+            <div className="sig-editor__underline-name">
+              <div className="sig-editor__underline-name-line">
                 <InlineField
-                  id="sig-name"
-                  label="Name"
-                  value={document.fullName}
-                  onChange={setName}
+                  id="sig-name-first"
+                  label="First name"
+                  value={first}
+                  onChange={(v) => setName(last ? `${v} ${last}` : v)}
                   onFocus={onFieldFocus}
-                  placeholder="Your name"
-                  className="sig-editor__edge-name-input sig-editor__edge-name-input--accent"
-                  minWidth={120}
+                  placeholder="First"
+                  className="sig-editor__underline-name-input sig-editor__underline-name-input--first"
+                  minWidth={24}
                 />
-                <div className="sig-editor__edge-role">
+                {last ? (
                   <InlineField
-                    id="sig-job"
-                    label="Title"
-                    value={document.jobTitle}
-                    onChange={setJobTitle}
+                    id="sig-name-last"
+                    label="Last name"
+                    value={last}
+                    onChange={(v) => setName(first ? `${first} ${v}` : v)}
                     onFocus={onFieldFocus}
-                    placeholder="Job title"
-                    className="sig-editor__edge-role-input"
+                    placeholder="Last"
+                    className="sig-editor__underline-name-input sig-editor__underline-name-input--last"
+                    minWidth={24}
                   />
-                  <span>at</span>
+                ) : null}
+              </div>
+              <div className="sig-editor__underline-highlight" aria-hidden="true" />
+            </div>
+            <div className="sig-editor__underline-role">
+              <InlineField
+                id="sig-job"
+                label="Title"
+                value={document.jobTitle}
+                onChange={setJobTitle}
+                onFocus={onFieldFocus}
+                placeholder="Job title"
+                className="sig-editor__underline-role-input sig-editor__underline-role-input--title"
+              />
+              <span aria-hidden="true">·</span>
+              <InlineField
+                id="sig-company"
+                label="Company"
+                value={document.company}
+                onChange={setCompany}
+                onFocus={onFieldFocus}
+                placeholder="Company"
+                className="sig-editor__underline-role-input"
+              />
+            </div>
+            <div className="sig-editor__underline-rule" />
+            <div className="sig-editor__underline-bottom">
+              <div className="sig-editor__underline-contacts">
+                <div className="sig-editor__underline-contact-row">
+                  <span className="sig-editor__underline-icon" aria-hidden="true">✉</span>
                   <InlineField
-                    id="sig-company"
-                    label="Company"
-                    value={document.company}
-                    onChange={setCompany}
+                    id="sig-email"
+                    label="Email"
+                    value={document.email}
+                    onChange={setEmail}
                     onFocus={onFieldFocus}
-                    placeholder="Company"
-                    className="sig-editor__edge-role-input"
+                    placeholder="you@example.com"
+                    className="sig-editor__underline-contact-input sig-editor__underline-contact-input--accent"
+                    minWidth={140}
                   />
                 </div>
-                <div className="sig-editor__edge-contacts">
-                  <div className="sig-editor__edge-contact-row">
-                    <span className="sig-editor__edge-icon" aria-hidden="true">✉</span>
+                {visible.has("phone") ? (
+                  <div className="sig-editor__underline-contact-row">
+                    <span className="sig-editor__underline-icon" aria-hidden="true">☏</span>
                     <InlineField
-                      id="sig-email"
-                      label="Email"
-                      value={document.email}
-                      onChange={setEmail}
+                      id="sig-phone"
+                      label="Phone"
+                      value={document.phone}
+                      onChange={setPhone}
                       onFocus={onFieldFocus}
-                      placeholder="you@example.com"
-                      className="sig-editor__edge-contact-input sig-editor__edge-contact-input--accent"
-                      minWidth={140}
+                      placeholder="+1 (555) 000-0000"
+                      className="sig-editor__underline-contact-input"
+                      autoFocus={!document.phone}
                     />
                   </div>
-                  {visible.has("phone") ? (
-                    <div className="sig-editor__edge-contact-row">
-                      <span className="sig-editor__edge-icon" aria-hidden="true">☏</span>
-                      <InlineField
-                        id="sig-phone"
-                        label="Phone"
-                        value={document.phone}
-                        onChange={setPhone}
-                        onFocus={onFieldFocus}
-                        placeholder="+1 (555) 000-0000"
-                        className="sig-editor__edge-contact-input"
-                        autoFocus={!document.phone}
-                      />
-                    </div>
-                  ) : null}
-                  {visible.has("website") ? (
-                    <div className="sig-editor__edge-contact-row">
-                      <span className="sig-editor__edge-icon" aria-hidden="true">⊕</span>
-                      <InlineField
-                        id="sig-website"
-                        label="Website"
-                        value={websiteDisplay}
-                        onChange={setWebsite}
-                        onFocus={onFieldFocus}
-                        placeholder="yoursite.com"
-                        className="sig-editor__edge-contact-input sig-editor__edge-contact-input--accent"
-                        autoFocus={!document.website}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-                {socialsBlock}
-                {ctaBlock}
-                {addFieldBlock}
-                {watermarkBlock}
+                ) : null}
+                {visible.has("website") ? (
+                  <div className="sig-editor__underline-contact-row">
+                    <span className="sig-editor__underline-icon" aria-hidden="true">⊕</span>
+                    <InlineField
+                      id="sig-website"
+                      label="Website"
+                      value={websiteDisplay}
+                      onChange={setWebsite}
+                      onFocus={onFieldFocus}
+                      placeholder="yoursite.com"
+                      className="sig-editor__underline-contact-input sig-editor__underline-contact-input--accent"
+                      autoFocus={!document.website}
+                    />
+                  </div>
+                ) : null}
               </div>
+              {socialsBlock}
             </div>
-          </>
+            {ctaBlock}
+            {addFieldBlock}
+            {watermarkBlock}
+          </div>
         ) : null}
 
         {isCard ? (

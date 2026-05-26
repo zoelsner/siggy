@@ -69,7 +69,7 @@ function ctaButton(doc: SignatureDocument, accentColor: string) {
 
 function watermark() {
   return (
-    <div style={{ marginTop: "16px", fontSize: "12px" }}>
+    <div style={{ marginTop: "10px", fontSize: "12px" }}>
       <a href="https://siggy.app" style={{ color: "#64748b", textDecoration: "none", fontWeight: 600 }}>
         Made with Siggy
       </a>
@@ -77,40 +77,53 @@ function watermark() {
   );
 }
 
-// ━━━ EDGE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Thick accent bar left, circular photo, icon contacts
+// ━━━ UNDERLINE HIGHLIGHT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Split-color name with a soft accent underline and compact contact rows.
 function edge(doc: SignatureDocument, ctx: TemplateRenderContext) {
+  const { first, last } = splitName(doc.fullName);
+  const nameFontFamily = resolveNameFontFamily(doc.fontFamily);
+  const socialBlock = socials(doc, ctx.accentColor);
+
   return (
-    <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark }}>
+    <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark, minWidth: "420px" }}>
       <tbody>
         <tr>
-          <td style={{ width: "5px", background: ctx.accentColor, borderRadius: "3px" }} />
-          <td style={{ paddingLeft: "20px", verticalAlign: "top" }}>
-            <table cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font }}>
+          <td style={{ verticalAlign: "top" }}>
+            {ctx.nameImageUrl && ctx.nameImageWidth && ctx.nameImageHeight ? (
+              <img alt={doc.fullName} src={ctx.nameImageUrl} width={ctx.nameImageWidth} height={ctx.nameImageHeight} style={{ display: "block" }} />
+            ) : (
+              <div style={{ display: "inline-block", ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
+                <div style={{ fontSize: "26px", fontWeight: 800, letterSpacing: "-0.06em", lineHeight: "1" }}>
+                  <span style={{ color: dark }}>{first}</span>
+                  {last ? <> <span style={{ color: ctx.accentColor }}>{last}</span></> : null}
+                </div>
+                <div style={{ height: "8px", backgroundColor: ctx.accentColor, opacity: 0.22, borderRadius: "2px", marginTop: "-6px", width: "100%" }} />
+              </div>
+            )}
+            <div style={{ marginTop: "8px", fontSize: "13px", color: mid }}>
+              <span style={{ color: dark, fontSize: "12px", fontWeight: 800, letterSpacing: "0.06em" }}>{doc.jobTitle.toUpperCase()}</span>
+              <span style={{ color: light, margin: "0 6px" }}>·</span>
+              <span>{doc.company}</span>
+            </div>
+            <div style={{ height: "1px", background: rule, margin: "8px 0 9px", width: "100%" }} />
+            <table cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, width: "100%" }}>
               <tbody>
                 <tr>
-                  <td style={{ paddingRight: "16px", verticalAlign: "top" }}>
-                    {photo(ctx.imageUrl, doc, 72)}
-                  </td>
                   <td style={{ verticalAlign: "top" }}>
-                    {nameImg(doc, ctx, { fontSize: "24px", fontWeight: 800, letterSpacing: "-0.02em", color: dark })}
-                    <div style={{ marginTop: "4px", fontSize: "13px", color: mid }}>
-                      {doc.jobTitle} at {doc.company}
-                    </div>
-                    <table cellPadding={0} cellSpacing={0} style={{ marginTop: "12px", borderCollapse: "collapse", fontFamily: font, fontSize: "13px", color: mid }}>
+                    <table cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, fontSize: "13px", color: mid }}>
                       <tbody>
-                        {doc.email ? <tr><td style={{ paddingRight: "8px", color: light, fontSize: "14px" }}>✉</td><td style={{ paddingBottom: "4px" }}>{link(`mailto:${doc.email}`, doc.email, ctx.accentColor)}</td></tr> : null}
-                        {doc.phone ? <tr><td style={{ paddingRight: "8px", color: light, fontSize: "14px" }}>☏</td><td style={{ paddingBottom: "4px" }}>{doc.phone}</td></tr> : null}
-                        {doc.website ? <tr><td style={{ paddingRight: "8px", color: light, fontSize: "14px" }}>⊕</td><td>{link(resolveUrlForHtml(doc.website), doc.website.replace(/^https?:\/\//i, ""), ctx.accentColor)}</td></tr> : null}
+                        {doc.email ? <tr><td style={{ paddingRight: "8px", color: light, fontSize: "13px" }}>✉</td><td style={{ paddingBottom: "3px" }}>{link(`mailto:${doc.email}`, doc.email, ctx.accentColor)}</td></tr> : null}
+                        {doc.phone ? <tr><td style={{ paddingRight: "8px", color: light, fontSize: "13px" }}>☏</td><td style={{ paddingBottom: "3px" }}>{doc.phone}</td></tr> : null}
+                        {doc.website ? <tr><td style={{ paddingRight: "8px", color: light, fontSize: "13px" }}>⊕</td><td>{link(resolveUrlForHtml(doc.website), doc.website.replace(/^https?:\/\//i, ""), ctx.accentColor)}</td></tr> : null}
                       </tbody>
                     </table>
-                    {socials(doc, ctx.accentColor)}
-                    {ctaButton(doc, ctx.accentColor)}
-                    {ctx.unlocked ? null : watermark()}
                   </td>
+                  {socialBlock ? <td style={{ verticalAlign: "bottom", textAlign: "right" as const, paddingLeft: "24px" }}>{socialBlock}</td> : null}
                 </tr>
               </tbody>
             </table>
+            {ctaButton(doc, ctx.accentColor)}
+            {ctx.unlocked ? null : watermark()}
           </td>
         </tr>
       </tbody>
@@ -129,7 +142,7 @@ function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
   const nameElement = (ctx.nameImageUrl && ctx.nameImageWidth && ctx.nameImageHeight)
     ? <img alt={doc.fullName} src={ctx.nameImageUrl} width={ctx.nameImageWidth} height={ctx.nameImageHeight} style={{ display: "block" }} />
     : (
-      <div style={{ fontSize: "40px", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: "0.95", ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
+      <div style={{ fontSize: "38px", fontWeight: 900, letterSpacing: "-0.06em", lineHeight: "0.84", ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
         <span style={{ color: dark }}>{firstName.toUpperCase()}</span>
         {lastName ? <><br /><span style={{ color: ctx.accentColor }}>{lastName.toUpperCase()}</span></> : null}
       </div>
@@ -141,17 +154,17 @@ function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
         <tr>
           <td colSpan={2} style={{ paddingBottom: "4px" }}>
             {nameElement}
-            <div style={{ height: "3px", background: ctx.accentColor, width: "100%", margin: "12px 0 0", borderRadius: "2px" }} />
+            <div style={{ height: "3px", background: ctx.accentColor, width: "100%", margin: "5px 0 0", borderRadius: "2px" }} />
           </td>
         </tr>
         <tr>
-          <td style={{ verticalAlign: "top", paddingTop: "14px", paddingRight: "24px" }}>
+          <td style={{ verticalAlign: "top", paddingTop: "8px", paddingRight: "24px" }}>
             <div style={{ fontSize: "12px", fontWeight: 800, letterSpacing: "0.06em", color: dark }}>{doc.jobTitle.toUpperCase()}</div>
             <div style={{ fontSize: "13px", color: mid, marginTop: "2px" }}>{doc.company}</div>
             {socials(doc, ctx.accentColor)}
             {ctaButton(doc, ctx.accentColor)}
           </td>
-          <td style={{ verticalAlign: "top", paddingTop: "14px", borderLeft: `1px solid ${rule}`, paddingLeft: "24px" }}>
+          <td style={{ verticalAlign: "top", paddingTop: "8px", borderLeft: `1px solid ${rule}`, paddingLeft: "24px" }}>
             <table cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, fontSize: "13px", color: mid }}>
               <tbody>
                 {doc.phone ? <tr><td style={{ paddingRight: "8px", color: light, fontSize: "13px" }}>☏</td><td style={{ paddingBottom: "4px" }}>{doc.phone}</td></tr> : null}
@@ -168,22 +181,22 @@ function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
 }
 
 // ━━━ CARD ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Bordered frame, tinted photo panel left, clean details right
+// Large tinted visual panel with an anchored photo and clean details.
 function card(doc: SignatureDocument, ctx: TemplateRenderContext) {
   return (
-    <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark, borderRadius: "12px", overflow: "hidden", border: "1px solid #cbd5e1" }}>
+    <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark }}>
       <tbody>
         <tr>
-          <td style={{ background: "#f8fafc", padding: "14px", verticalAlign: "middle", textAlign: "center" as const }}>
-            {photo(ctx.imageUrl, doc, 80, "12px")}
+          <td style={{ background: "#f4f4f8", borderRadius: "12px", padding: "34px 28px", verticalAlign: "middle", textAlign: "center" as const }}>
+            {photo(ctx.imageUrl, doc, 94, "14px")}
           </td>
-          <td style={{ padding: "18px 20px", verticalAlign: "top" }}>
-            {nameImg(doc, ctx, { fontSize: "20px", fontWeight: 700, letterSpacing: "-0.01em", color: dark })}
-            <div style={{ fontSize: "13px", color: mid, marginTop: "3px" }}>{doc.jobTitle} <span style={{ color: light }}>·</span> {doc.company}</div>
-            <div style={{ height: "1px", background: rule, margin: "10px 0", width: "140px" }} />
-            <div style={{ fontSize: "12px", color: mid, lineHeight: "20px" }}>
+          <td style={{ padding: "20px 0 20px 28px", verticalAlign: "top", minWidth: "360px" }}>
+            {nameImg(doc, ctx, { fontSize: "24px", fontWeight: 800, letterSpacing: "-0.02em", color: ctx.accentColor })}
+            <div style={{ fontSize: "14px", color: dark, marginTop: "2px" }}>{doc.jobTitle} <span style={{ color: light }}>·</span> {doc.company}</div>
+            <div style={{ height: "1px", background: rule, margin: "14px 0", width: "100%" }} />
+            <div style={{ fontSize: "13px", color: dark, lineHeight: "20px" }}>
               {link(`mailto:${doc.email}`, doc.email, ctx.accentColor)}
-              {doc.phone ? <> <span style={{ color: light }}>|</span> {doc.phone}</> : null}
+              {doc.phone ? <> <span style={{ color: light, margin: "0 10px" }}>|</span> {doc.phone}</> : null}
               {doc.website ? <><br />{link(resolveUrlForHtml(doc.website), doc.website.replace(/^https?:\/\//i, ""), ctx.accentColor)}</> : null}
             </div>
             {socials(doc, ctx.accentColor)}
@@ -197,19 +210,19 @@ function card(doc: SignatureDocument, ctx: TemplateRenderContext) {
 }
 
 // ━━━ CLEAN ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Pure text, no decoration
+// Pure text, accent name, compact separators.
 function clean(doc: SignatureDocument, ctx: TemplateRenderContext) {
   return (
     <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark }}>
       <tbody>
         <tr>
           <td>
-            {nameImg(doc, ctx, { fontSize: "16px", fontWeight: 700, color: dark })}
-            <div style={{ fontSize: "13px", color: mid, marginTop: "2px" }}>{doc.jobTitle}, {doc.company}</div>
-            <div style={{ marginTop: "8px", fontSize: "12px", color: light, lineHeight: "1.7" }}>
-              <a href={`mailto:${doc.email}`} style={{ color: mid, textDecoration: "none" }}>{doc.email}</a>
-              {doc.phone ? <> <span style={{ color: "#d1d5db" }}>·</span> <span style={{ color: mid }}>{doc.phone}</span></> : null}
-              {doc.website ? <> <span style={{ color: "#d1d5db" }}>·</span> <a href={resolveUrlForHtml(doc.website)} style={{ color: mid, textDecoration: "none" }}>{doc.website.replace(/^https?:\/\//i, "")}</a></> : null}
+            {nameImg(doc, ctx, { fontSize: "20px", fontWeight: 800, color: ctx.accentColor })}
+            <div style={{ fontSize: "14px", color: dark, marginTop: "2px" }}>{doc.jobTitle}, {doc.company}</div>
+            <div style={{ marginTop: "16px", fontSize: "13px", color: dark, lineHeight: "1.7" }}>
+              <a href={`mailto:${doc.email}`} style={{ color: dark, textDecoration: "none" }}>{doc.email}</a>
+              {doc.phone ? <> <span style={{ color: "#d1d5db", margin: "0 8px" }}>·</span> <span style={{ color: dark }}>{doc.phone}</span></> : null}
+              {doc.website ? <> <span style={{ color: "#d1d5db", margin: "0 8px" }}>·</span> <a href={resolveUrlForHtml(doc.website)} style={{ color: dark, textDecoration: "none" }}>{doc.website.replace(/^https?:\/\//i, "")}</a></> : null}
             </div>
             {socials(doc, ctx.accentColor)}
             {ctaButton(doc, ctx.accentColor)}
@@ -222,10 +235,10 @@ function clean(doc: SignatureDocument, ctx: TemplateRenderContext) {
 }
 
 export const templateDefinitions: TemplateDefinition[] = [
-  { id: "edge", name: "Edge", description: "Accent bar + photo + icon contacts.", headline: "Bold and structured.", supportsImage: true, render: edge },
   { id: "bold", name: "Bold", description: "Massive split-color name as hero.", headline: "Maximum typographic impact.", supportsImage: false, render: bold },
-  { id: "card", name: "Card", description: "Framed card with tinted photo panel.", headline: "Professional and contained.", supportsImage: true, render: card },
-  { id: "clean", name: "Clean", description: "Pure text, zero decoration.", headline: "Minimal and portable.", supportsImage: false, render: clean },
+  { id: "edge", name: "Underline", description: "Soft highlight underline with compact icon contacts.", headline: "Personality without bulk.", supportsImage: false, render: edge },
+  { id: "card", name: "Card", description: "Visual anchor with a tinted headshot panel.", headline: "Structured and memorable.", supportsImage: true, render: card },
+  { id: "clean", name: "Minimal", description: "Pure text, accent name, zero chrome.", headline: "Quiet and portable.", supportsImage: false, render: clean },
 ];
 
 export function splitName(name: string) {
