@@ -2,16 +2,15 @@
 
 import { trackEvent } from "@/lib/analytics";
 import { useAccess } from "@/lib/billing";
+import { SUPPORT_EMAIL } from "@/lib/site";
 
 export function Pricing() {
   const { unlocked, resolved, error, startCheckout } = useAccess();
 
   const features = [
-    "4 editorial-quality templates",
-    "Custom fonts rendered as images",
-    "Headshot upload & resize",
-    "Social icons & CTA button",
-    "Gmail, Outlook & Apple Mail ready",
+    "No “Made with Siggy” watermark",
+    "9 pro fonts, rendered as images so email clients can't break them",
+    "Headshot upload with crop & resize",
     "Lifetime access — no subscription",
   ];
 
@@ -30,6 +29,10 @@ export function Pricing() {
             <li key={feature}>{feature}</li>
           ))}
         </ul>
+        <p className="pricing-card__note">
+          The free editor includes all 4 templates, system fonts, social links &amp; CTA buttons —
+          with a small Siggy watermark.
+        </p>
         {!resolved ? null : unlocked ? (
           <a className="button button--primary button--large pricing-card__cta" href="/editor">
             Open Editor
@@ -49,13 +52,13 @@ export function Pricing() {
             {error === "checkout_failed" ? (
               <p className="pricing-card__error">
                 Couldn&apos;t open checkout. Try again, or email{" "}
-                <a href="mailto:zach@siggy.app">zach@siggy.app</a>.
+                <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
               </p>
             ) : null}
             {error === "redeem_failed" ? (
               <p className="pricing-card__error">
                 We received your payment but couldn&apos;t verify it. Email{" "}
-                <a href="mailto:zach@siggy.app">zach@siggy.app</a> with your receipt.
+                <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> with your receipt.
               </p>
             ) : null}
           </>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { SUPPORT_EMAIL } from "@/lib/site";
+
 export const metadata: Metadata = {
   title: "Terms & Conditions — Siggy",
 };
@@ -77,7 +79,7 @@ export default function TermsPage() {
       <h2>10. Contact</h2>
       <p>
         Questions about these Terms? Email us at{" "}
-        <a href="mailto:zach@siggy.app">zach@siggy.app</a>.
+        <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
       </p>
     </main>
   );

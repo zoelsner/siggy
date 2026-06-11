@@ -11,6 +11,24 @@ async function openFreshEditor(page: import("@playwright/test").Page) {
   await expect(page.getByText("Email signature builder")).toBeVisible();
 }
 
+// Paid features (headshot, pro fonts) are gated — seed a fake access token
+// and mock its verification so the editor resolves as unlocked.
+async function openUnlockedEditor(page: import("@playwright/test").Page) {
+  await page.route("**/api/billing/verify-token", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ valid: true }),
+    });
+  });
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    window.localStorage.setItem("siggy_access", "e2e-access-token");
+  });
+  await page.goto("/editor");
+  await expect(page.getByText("Email signature builder")).toBeVisible();
+}
+
 test.describe("editor", () => {
   test("loads the builder shell and enables copy after render", async ({ page }) => {
     await openFreshEditor(page);
@@ -94,7 +112,7 @@ test.describe("editor", () => {
       });
     });
 
-    await openFreshEditor(page);
+    await openUnlockedEditor(page);
 
     const signature = page.locator(".message-card__signature");
     await page.getByRole("tab", { name: "Profile" }).click();
@@ -111,5 +129,25 @@ test.describe("editor", () => {
     await page.getByRole("button", { name: "Use photo" }).click();
 
     await expect(signature.locator(".sig-editor__avatar--photo img")).toBeVisible();
+  });
+
+  test("free tier shows unlock CTA and routes locked features to checkout", async ({ page }) => {
+    await page.route("**/api/billing/checkout", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ url: "/editor?mock_checkout=1" }),
+      });
+    });
+
+    await openFreshEditor(page);
+
+    await expect(page.getByRole("button", { name: "Unlock — $19" })).toBeVisible();
+    await expect(page.locator(".sig-editor__watermark")).toContainText("Made with Siggy");
+
+    const lockedFont = page.locator(".inspector-font-grid").getByRole("button", { name: /Fraunces/ });
+    await expect(lockedFont).toContainText("Pro");
+    await lockedFont.click();
+    await page.waitForURL(/mock_checkout=1/);
   });
 });

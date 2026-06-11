@@ -2,6 +2,7 @@ import React from "react";
 
 import { getFilledSocials, resolveUrlForHtml } from "./document";
 import { fontFamilyMap } from "./fonts";
+import { SITE_URL } from "./site";
 import type { SignatureDocument, TemplateDefinition, TemplateId, TemplateRenderContext } from "./types";
 
 const dark = "#0f172a";
@@ -70,7 +71,7 @@ function ctaButton(doc: SignatureDocument, accentColor: string) {
 function watermark() {
   return (
     <div style={{ marginTop: "16px", fontSize: "12px" }}>
-      <a href="https://siggy.app" style={{ color: "#64748b", textDecoration: "none", fontWeight: 600 }}>
+      <a href={SITE_URL} style={{ color: "#64748b", textDecoration: "none", fontWeight: 600 }}>
         Made with Siggy
       </a>
     </div>

@@ -12,8 +12,9 @@ import { trackEvent } from "@/lib/analytics";
 import { useAccess } from "@/lib/billing";
 import { createDefaultDocument } from "@/lib/default-document";
 import { touchDocument } from "@/lib/document";
-import { fontFamilyMap, fontOptions, isSystemFont } from "@/lib/fonts";
+import { DEFAULT_FREE_FONT, fontFamilyMap, fontOptions, isSystemFont } from "@/lib/fonts";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
+import { SUPPORT_EMAIL } from "@/lib/site";
 import { templateDefinitions } from "@/lib/templates";
 import type { AssetUploadResponse, ClientProfileId, RenderResult, SignatureDocument, SignatureImageAsset, TemplateId } from "@/lib/types";
 
@@ -56,7 +57,7 @@ function TemplateThumb({ id }: { id: TemplateId }) {
 }
 
 export function StudioShell() {
-  const { unlocked, token } = useAccess();
+  const { unlocked, resolved, token, error, startCheckout } = useAccess();
   const [document, setDocument] = useState<SignatureDocument>(() => createDefaultDocument());
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [renderState, setRenderState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
@@ -85,6 +86,21 @@ export function StudioShell() {
   useEffect(() => {
     adapterRef.current.save(document);
   }, [document]);
+
+  // Once access resolves as free, downgrade any pro features left in the
+  // draft (pro font, headshot) so the preview matches what /api/render will
+  // actually produce on copy.
+  useEffect(() => {
+    if (!resolved || unlocked) return;
+    setDocument((current) => {
+      if (isSystemFont(current.fontFamily) && !current.image) return current;
+      return touchDocument({
+        ...current,
+        fontFamily: isSystemFont(current.fontFamily) ? current.fontFamily : DEFAULT_FREE_FONT,
+        image: null
+      });
+    });
+  }, [resolved, unlocked]);
 
   // Background render — only used to gate Copy; output is not displayed.
   useEffect(() => {
@@ -134,6 +150,11 @@ export function StudioShell() {
     });
   }
 
+  function handleUnlock(source: string) {
+    trackEvent("unlock_click", { source });
+    void startCheckout("editor");
+  }
+
   function handleImageUploaded(asset: SignatureImageAsset) {
     updateDocument((current) => ({ ...current, image: asset }));
     trackEvent("image_uploaded", { bytes: 0 });
@@ -160,6 +181,7 @@ export function StudioShell() {
             fontFamily: document.fontFamily,
             accentColor: document.accentColor,
             weight: 700,
+            token,
           }),
         });
         if (nameRes.ok) {
@@ -245,6 +267,15 @@ export function StudioShell() {
           <span className="topbar__eyebrow">Email signature builder</span>
         </div>
         <div className="topbar__right">
+          {resolved && !unlocked ? (
+            <button
+              className="button button--unlock"
+              onClick={() => handleUnlock("editor_topbar")}
+              type="button"
+            >
+              Unlock — $19
+            </button>
+          ) : null}
           <button className="button button--subtle" onClick={handleReset} type="button">
             ↻ Reset
           </button>
@@ -266,6 +297,20 @@ export function StudioShell() {
           </button>
         </div>
       </div>
+
+      {error === "redeem_failed" ? (
+        <div className="builder-banner builder-banner--error" role="alert">
+          We received your payment but couldn&apos;t verify it automatically. Email{" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> with your Stripe receipt and
+          we&apos;ll unlock you right away.
+        </div>
+      ) : null}
+      {error === "checkout_failed" ? (
+        <div className="builder-banner builder-banner--error" role="alert">
+          Couldn&apos;t open checkout. Try again, or email{" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+        </div>
+      ) : null}
 
       <section className="builder-grid">
         <aside className="builder-panel template-rail">
@@ -359,10 +404,12 @@ export function StudioShell() {
                   document={document}
                   imageUrl={document.image?.url ?? null}
                   unlocked={unlocked}
+                  token={token}
                   onChange={updateDocument}
                   onFieldFocus={setFocusedLabel}
                   onImageUploaded={handleImageUploaded}
                   onImageRemoved={handleImageRemoved}
+                  onUpsell={handleUnlock}
                 />
               </div>
             </article>
@@ -377,20 +424,33 @@ export function StudioShell() {
             <div className="field">
               <label>Font</label>
               <div className="inspector-font-grid">
-                {fontOptions.slice(0, 6).map((font) => (
-                  <button
-                    key={font.id}
-                    className={`inspector-font${document.fontFamily === font.id ? " inspector-font--active" : ""}`}
-                    onClick={() =>
-                      updateDocument((current) => ({ ...current, fontFamily: font.id }))
-                    }
-                    style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
-                    type="button"
-                  >
-                    {font.name}
-                  </button>
-                ))}
+                {fontOptions.map((font) => {
+                  const locked = !unlocked && !font.system;
+                  return (
+                    <button
+                      key={font.id}
+                      className={`inspector-font${document.fontFamily === font.id ? " inspector-font--active" : ""}${locked ? " inspector-font--locked" : ""}`}
+                      onClick={() => {
+                        if (locked) {
+                          handleUnlock("editor_font");
+                          return;
+                        }
+                        updateDocument((current) => ({ ...current, fontFamily: font.id }));
+                      }}
+                      style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
+                      type="button"
+                    >
+                      {font.name}
+                      {locked ? <span className="pro-chip">Pro</span> : null}
+                    </button>
+                  );
+                })}
               </div>
+              {resolved && !unlocked ? (
+                <p className="helper-text">
+                  Pro fonts unlock with Siggy — $19 one-time.
+                </p>
+              ) : null}
             </div>
             <div className="field">
               <label>Accent</label>
@@ -502,7 +562,11 @@ export function StudioShell() {
             <summary>
               <span>Headshot & links</span>
             </summary>
-            <p className="helper-text">Add a headshot directly from the signature preview. Optional fields still live behind the inline + Add field control.</p>
+            <p className="helper-text">
+              {unlocked
+                ? "Add a headshot directly from the signature preview. Optional fields still live behind the inline + Add field control."
+                : "Headshots are part of the $19 unlock. Optional fields still live behind the inline + Add field control."}
+            </p>
           </details>
 
           <div className="inspector-install">
@@ -529,19 +593,27 @@ export function StudioShell() {
       <div className="builder-mobile-style" role="toolbar" aria-label="Style">
         <span className="style-pill__label">Font</span>
         <div className="style-pill__fonts">
-          {fontOptions.map((font) => (
-            <button
-              key={font.id}
-              className={`style-pill__font${document.fontFamily === font.id ? " style-pill__font--active" : ""}`}
-              onClick={() =>
-                updateDocument((current) => ({ ...current, fontFamily: font.id }))
-              }
-              style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
-              type="button"
-            >
-              {font.name}
-            </button>
-          ))}
+          {fontOptions.map((font) => {
+            const locked = !unlocked && !font.system;
+            return (
+              <button
+                key={font.id}
+                className={`style-pill__font${document.fontFamily === font.id ? " style-pill__font--active" : ""}${locked ? " style-pill__font--locked" : ""}`}
+                onClick={() => {
+                  if (locked) {
+                    handleUnlock("editor_font_mobile");
+                    return;
+                  }
+                  updateDocument((current) => ({ ...current, fontFamily: font.id }));
+                }}
+                style={{ fontFamily: fontFamilyMap[font.id] ?? "inherit" }}
+                type="button"
+              >
+                {font.name}
+                {locked ? <span className="pro-chip">Pro</span> : null}
+              </button>
+            );
+          })}
         </div>
         <span className="style-pill__divider" />
         <span className="style-pill__label">Color</span>

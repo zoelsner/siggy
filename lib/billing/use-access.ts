@@ -89,10 +89,14 @@ export function useAccess() {
     };
   }, []);
 
-  const startCheckout = useCallback(async (): Promise<void> => {
+  const startCheckout = useCallback(async (source: "editor" | "landing" = "landing"): Promise<void> => {
     setError(null);
     try {
-      const res = await fetch("/api/billing/checkout", { method: "POST" });
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source }),
+      });
       if (!res.ok) {
         setError("checkout_failed");
         return;

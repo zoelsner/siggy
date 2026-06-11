@@ -12,10 +12,12 @@ interface SignatureEditorProps {
   document: SignatureDocument;
   imageUrl: string | null;
   unlocked: boolean;
+  token: string | null;
   onChange: (mutator: (current: SignatureDocument) => SignatureDocument) => void;
   onFieldFocus: (label: string | null) => void;
   onImageUploaded: (asset: AssetUploadResponse["asset"]) => void;
   onImageRemoved: () => void;
+  onUpsell: (source: string) => void;
 }
 
 type OptionalFieldKey = "phone" | "website" | "linkedin" | "x" | "instagram" | "github" | "cta";
@@ -114,10 +116,12 @@ export function SignatureEditor({
   document,
   imageUrl,
   unlocked,
+  token,
   onChange,
   onFieldFocus,
   onImageUploaded,
   onImageRemoved,
+  onUpsell,
 }: SignatureEditorProps) {
   const [revealed, setRevealed] = useState<Set<OptionalFieldKey>>(new Set());
   const [addOpen, setAddOpen] = useState(false);
@@ -227,6 +231,7 @@ export function SignatureEditor({
       const form = new FormData();
       form.append("file", file);
       form.append("alt", `${document.fullName} headshot`);
+      if (token) form.append("token", token);
       const res = await fetch("/api/assets", { method: "POST", body: form });
       if (!res.ok) throw new Error("Upload failed");
       const data = (await res.json()) as AssetUploadResponse;
@@ -316,14 +321,14 @@ export function SignatureEditor({
         </div>
       ) : (
         <button
-          aria-label="Add headshot"
+          aria-label={unlocked ? "Add headshot" : "Headshot unlocks with Siggy — $19"}
           className="sig-editor__avatar"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => (unlocked ? fileInputRef.current?.click() : onUpsell("editor_headshot"))}
           style={{ background: document.accentColor }}
           type="button"
         >
           <span className="sig-editor__avatar-initials">{initials}</span>
-          <span className="sig-editor__avatar-plus" aria-hidden="true">+</span>
+          <span className="sig-editor__avatar-plus" aria-hidden="true">{unlocked ? "+" : "🔒"}</span>
         </button>
       )}
       {isUploading ? <span className="sig-editor__avatar-status">Uploading…</span> : null}
@@ -426,7 +431,14 @@ export function SignatureEditor({
 
   const watermarkBlock = !unlocked ? (
     <div className="sig-editor__watermark">
-      Made with <a href="https://siggy.app">Siggy</a>
+      Made with Siggy
+      <button
+        className="sig-editor__watermark-remove"
+        onClick={() => onUpsell("editor_watermark")}
+        type="button"
+      >
+        Remove — $19
+      </button>
     </div>
   ) : null;
 

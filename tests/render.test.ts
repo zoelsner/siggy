@@ -13,7 +13,8 @@ describe("renderSignature", () => {
       },
       {
         origin: "https://siggy.example",
-        profileId: "gmail_web"
+        profileId: "gmail_web",
+        unlocked: true
       }
     );
 
@@ -22,10 +23,48 @@ describe("renderSignature", () => {
     expect(result.html).not.toMatch(/<style[\s>]/i);
   });
 
+  it("strips paid features from free renders and keeps the watermark", async () => {
+    const result = await renderSignature(
+      {
+        ...createFixture("full"),
+        fontFamily: "fraunces"
+      },
+      {
+        origin: "https://siggy.example",
+        profileId: "gmail_web"
+      }
+    );
+
+    expect(result.html).not.toContain("avatar.jpg");
+    expect(result.html).toContain("Georgia");
+    expect(result.html).not.toContain("Fraunces");
+    expect(result.html).toContain("Made with Siggy");
+    expect(result.assetRefs).toEqual([]);
+  });
+
+  it("keeps paid features and drops the watermark for unlocked renders", async () => {
+    const result = await renderSignature(
+      {
+        ...createFixture("full"),
+        fontFamily: "fraunces"
+      },
+      {
+        origin: "https://siggy.example",
+        profileId: "gmail_web",
+        unlocked: true
+      }
+    );
+
+    expect(result.html).toContain("avatar.jpg");
+    expect(result.html).toContain("Fraunces");
+    expect(result.html).not.toContain("Made with Siggy");
+  });
+
   it("warns when uploaded images are hosted on localhost", async () => {
     const result = await renderSignature(createFixture("full"), {
       origin: "http://localhost:3000",
-      profileId: "gmail_web"
+      profileId: "gmail_web",
+      unlocked: true
     });
 
     expect(result.warnings.some((warning) => warning.code === "localhost-image-hosting")).toBe(true);

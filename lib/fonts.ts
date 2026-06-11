@@ -6,6 +6,11 @@ export interface FontOption {
 }
 
 export const fontOptions: FontOption[] = [
+  // System fonts ship free; Google fonts are part of the paid unlock.
+  // Keep a system font first — getFontOption falls back to fontOptions[0],
+  // so unknown ids degrade to a free font.
+  { id: "georgia", name: "Georgia", system: true },
+  { id: "arial", name: "Arial", system: true },
   { id: "dm-sans", name: "DM Sans", google: "DM+Sans" },
   { id: "fraunces", name: "Fraunces", google: "Fraunces" },
   { id: "outfit", name: "Outfit", google: "Outfit" },
@@ -25,7 +30,12 @@ export function isSystemFont(id: string): boolean {
   return getFontOption(id).system === true;
 }
 
+// What free-tier renders fall back to when a document carries a pro font.
+export const DEFAULT_FREE_FONT = "georgia";
+
 export const fontFamilyMap: Record<string, string> = {
+  "georgia": "Georgia, 'Times New Roman', serif",
+  "arial": "Arial, Helvetica, sans-serif",
   "dm-sans": "'DM Sans', sans-serif",
   "fraunces": "'Fraunces', 'Times New Roman', serif",
   "outfit": "'Outfit', sans-serif",

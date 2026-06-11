@@ -19,7 +19,7 @@ export function createDefaultDocument(): SignatureDocument {
     phone: "+1 (415) 555-0142",
     website: "meridian.design",
     accentColor: "#4f46e5",
-    fontFamily: "dm-sans",
+    fontFamily: "georgia",
     image: null,
     nameImage: null,
     socials: baseSocials,
