@@ -13,7 +13,8 @@ describe("renderSignature", () => {
       },
       {
         origin: "https://siggy.example",
-        profileId: "gmail_web"
+        profileId: "gmail_web",
+        unlocked: true
       }
     );
 
@@ -22,10 +23,49 @@ describe("renderSignature", () => {
     expect(result.html).not.toMatch(/<style[\s>]/i);
   });
 
+  // GATES.proFonts / GATES.headshot are currently off — free renders keep
+  // everything and only differ by the watermark. If a gate is flipped on,
+  // extend this test to assert the stripping behavior.
+  it("keeps fonts and headshots for free renders but adds the watermark", async () => {
+    const result = await renderSignature(
+      {
+        ...createFixture("full"),
+        fontFamily: "fraunces"
+      },
+      {
+        origin: "https://siggy.example",
+        profileId: "gmail_web"
+      }
+    );
+
+    expect(result.html).toContain("avatar.jpg");
+    expect(result.html).toContain("Fraunces");
+    expect(result.html).toContain("Made with Siggy");
+  });
+
+  it("drops the watermark for unlocked renders", async () => {
+    const result = await renderSignature(
+      {
+        ...createFixture("full"),
+        fontFamily: "fraunces"
+      },
+      {
+        origin: "https://siggy.example",
+        profileId: "gmail_web",
+        unlocked: true
+      }
+    );
+
+    expect(result.html).toContain("avatar.jpg");
+    expect(result.html).toContain("Fraunces");
+    expect(result.html).not.toContain("Made with Siggy");
+  });
+
   it("warns when uploaded images are hosted on localhost", async () => {
     const result = await renderSignature(createFixture("full"), {
       origin: "http://localhost:3000",
-      profileId: "gmail_web"
+      profileId: "gmail_web",
+      unlocked: true
     });
 
     expect(result.warnings.some((warning) => warning.code === "localhost-image-hosting")).toBe(true);

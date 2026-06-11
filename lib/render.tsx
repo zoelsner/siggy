@@ -1,7 +1,9 @@
 import React from "react";
 
+import { GATES } from "./billing/gates";
 import { clientProfiles } from "./client-profiles";
 import { coerceSignatureDocument, getFilledSocials, isLocalOrigin, resolveUrlForHtml } from "./document";
+import { DEFAULT_FREE_FONT, isSystemFont } from "./fonts";
 import { getTemplateDefinition } from "./templates";
 import type { ClientProfileId, RenderResult, RenderWarning, SignatureDocument } from "./types";
 
@@ -11,12 +13,27 @@ interface RenderOptions {
   unlocked?: boolean;
 }
 
+// Strip whatever GATES marks as paid. Enforce here, not in the UI — the
+// render API is reachable directly.
+function enforceFreeTier(document: SignatureDocument): SignatureDocument {
+  if (!GATES.proFonts && !GATES.headshot) return document;
+  return {
+    ...document,
+    fontFamily:
+      !GATES.proFonts || isSystemFont(document.fontFamily) ? document.fontFamily : DEFAULT_FREE_FONT,
+    image: GATES.headshot ? null : document.image,
+    nameImage: GATES.proFonts ? null : document.nameImage
+  };
+}
+
 export async function renderSignature(
   input: SignatureDocument | unknown,
   options: RenderOptions = {}
 ): Promise<RenderResult> {
   const { renderToStaticMarkup } = await import("react-dom/server");
-  const document = coerceSignatureDocument(input);
+  const unlocked = options.unlocked ?? false;
+  const coerced = coerceSignatureDocument(input);
+  const document = unlocked ? coerced : enforceFreeTier(coerced);
   const profile = clientProfiles[options.profileId ?? document.targetProfileId];
   const template = getTemplateDefinition(document.templateId);
   const imageUrl = document.image ? resolveUrlForHtml(document.image.url, options.origin) : null;
@@ -31,7 +48,7 @@ export async function renderSignature(
         nameImageWidth: document.nameImage?.width ?? null,
         nameImageHeight: document.nameImage?.height ?? null,
         profileId: profile.id,
-        unlocked: options.unlocked ?? false
+        unlocked
       })}
     </div>
   );

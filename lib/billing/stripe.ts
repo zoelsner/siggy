@@ -30,7 +30,9 @@ function getBaseUrl(): string {
 // legitimate redemption happens within seconds of the redirect.
 const MAX_SESSION_AGE_MS = 60 * 60 * 1000; // 1 hour
 
-export async function createCheckoutSession(): Promise<{ url: string }> {
+export type CheckoutSource = "editor" | "landing";
+
+export async function createCheckoutSession(source: CheckoutSource = "landing"): Promise<{ url: string }> {
   const priceId = process.env.STRIPE_PRICE_ID;
   if (!priceId) throw new Error("STRIPE_PRICE_ID not configured");
 
@@ -39,7 +41,7 @@ export async function createCheckoutSession(): Promise<{ url: string }> {
     mode: "payment",
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${base}/editor?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${base}/#pricing`,
+    cancel_url: source === "editor" ? `${base}/editor` : `${base}/#pricing`,
     allow_promotion_codes: true,
     automatic_tax: { enabled: false },
   });

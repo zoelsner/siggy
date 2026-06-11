@@ -2,7 +2,7 @@
 
 Email signature builder for designers, creatives, and freelancers. Pick a template, type your details, copy/paste into Gmail. No account, no setup.
 
-**Live:** [siggy.app](https://siggy.app) (or `siggy-orpin.vercel.app`)
+**Live:** [siggy-orpin.vercel.app](https://siggy-orpin.vercel.app)
 
 ![Screenshot placeholder — landing page](docs/screenshot-landing.png)
 

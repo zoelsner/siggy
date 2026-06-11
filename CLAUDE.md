@@ -7,7 +7,7 @@ Email signature builder. Next.js 15 App Router on Vercel.
 ```bash
 npm run dev          # Dev server (port 3000)
 npm run build        # Production build
-npm test             # Vitest (9 tests)
+npm test             # Vitest (11 tests)
 npx tsc --noEmit     # Type check
 npx vitest --run -u  # Update snapshots
 ```
@@ -43,7 +43,8 @@ lib/
     stripe.ts          # Stripe SDK adapter — createCheckoutSession, isSessionPaid
     token.ts           # HMAC sign/verify for the access token (Web Crypto)
   runtime.ts           # Vercel Blob storage (saveAsset)
-  render.tsx           # Server-side signature rendering pipeline
+  render.tsx           # Server-side signature rendering pipeline (+ free-tier enforcement)
+  site.ts              # SITE_URL + SUPPORT_EMAIL — single source for outward-facing links
   types.ts             # Shared types (SignatureDocument, TemplateDefinition, etc.)
 ```
 
@@ -56,6 +57,12 @@ lib/
 - Returning users: token verified locally on every load via `POST /api/billing/verify-token` — pure HMAC check, no Stripe call. Lifetime = no token expiry.
 - No license keys, no overlay, no DB. The signed token IS the proof of purchase.
 
+### Free vs. paid (enforced server-side, flag-driven)
+
+- **Current model**: everything is free — all templates, all 11 fonts, headshots, socials, CTA. The $19 unlock only removes the "Made with Siggy" watermark.
+- **`GATES` in `lib/billing/gates.ts`** controls feature gating. Flip `proFonts`/`headshot` to `true` to move those behind the unlock — server enforcement (`enforceFreeTier` in `lib/render.tsx`, 403s in `/api/render-name` + `/api/assets`), the editor's locked UI states, and stale-draft downgrading all activate automatically. Update the pricing card copy in `components/landing/pricing.tsx` to match if you flip them.
+- The watermark itself is always server-derived: `/api/render` verifies the HMAC token and only drops the watermark for valid tokens — never trust a client boolean.
+
 ## Environment Variables
 
 | Var | Where | Purpose |
@@ -64,6 +71,8 @@ lib/
 | `STRIPE_SECRET_KEY` | `.env.local` + Vercel | Stripe API auth (use `sk_test_…` in dev) |
 | `STRIPE_PRICE_ID` | `.env.local` + Vercel | Stripe Price object for the $19 LTD |
 | `SIGGY_TOKEN_SECRET` | `.env.local` + Vercel | 32-byte hex string used to HMAC-sign access tokens — rotating it invalidates all existing tokens |
+| `NEXT_PUBLIC_SITE_URL` | optional | Overrides the watermark/link URL in `lib/site.ts` (falls back to the production Vercel URL) — set when a custom domain is live |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | optional | Overrides the support mailto in `lib/site.ts` |
 
 ## Gotchas
 
