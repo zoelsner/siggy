@@ -131,7 +131,7 @@ test.describe("editor", () => {
     await expect(signature.locator(".sig-editor__avatar--photo img")).toBeVisible();
   });
 
-  test("free tier shows unlock CTA and routes locked features to checkout", async ({ page }) => {
+  test("free tier shows unlock CTA, keeps fonts usable, and watermark routes to checkout", async ({ page }) => {
     await page.route("**/api/billing/checkout", async (route) => {
       await route.fulfill({
         status: 200,
@@ -145,9 +145,13 @@ test.describe("editor", () => {
     await expect(page.getByRole("button", { name: "Unlock — $19" })).toBeVisible();
     await expect(page.locator(".sig-editor__watermark")).toContainText("Made with Siggy");
 
-    const lockedFont = page.locator(".inspector-font-grid").getByRole("button", { name: /Fraunces/ });
-    await expect(lockedFont).toContainText("Pro");
-    await lockedFont.click();
+    // Fonts are not gated (GATES.proFonts off) — free users can select any of them.
+    const proFont = page.locator(".inspector-font-grid").getByRole("button", { name: "Fraunces" });
+    await proFont.click();
+    await expect(proFont).toHaveClass(/inspector-font--active/);
+
+    // The watermark's remove button is the paid upsell.
+    await page.locator(".sig-editor__watermark-remove").click();
     await page.waitForURL(/mock_checkout=1/);
   });
 });

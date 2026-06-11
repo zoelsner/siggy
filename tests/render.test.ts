@@ -23,7 +23,10 @@ describe("renderSignature", () => {
     expect(result.html).not.toMatch(/<style[\s>]/i);
   });
 
-  it("strips paid features from free renders and keeps the watermark", async () => {
+  // GATES.proFonts / GATES.headshot are currently off — free renders keep
+  // everything and only differ by the watermark. If a gate is flipped on,
+  // extend this test to assert the stripping behavior.
+  it("keeps fonts and headshots for free renders but adds the watermark", async () => {
     const result = await renderSignature(
       {
         ...createFixture("full"),
@@ -35,14 +38,12 @@ describe("renderSignature", () => {
       }
     );
 
-    expect(result.html).not.toContain("avatar.jpg");
-    expect(result.html).toContain("Georgia");
-    expect(result.html).not.toContain("Fraunces");
+    expect(result.html).toContain("avatar.jpg");
+    expect(result.html).toContain("Fraunces");
     expect(result.html).toContain("Made with Siggy");
-    expect(result.assetRefs).toEqual([]);
   });
 
-  it("keeps paid features and drops the watermark for unlocked renders", async () => {
+  it("drops the watermark for unlocked renders", async () => {
     const result = await renderSignature(
       {
         ...createFixture("full"),

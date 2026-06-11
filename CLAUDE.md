@@ -57,12 +57,11 @@ lib/
 - Returning users: token verified locally on every load via `POST /api/billing/verify-token` — pure HMAC check, no Stripe call. Lifetime = no token expiry.
 - No license keys, no overlay, no DB. The signed token IS the proof of purchase.
 
-### Free vs. paid (enforced server-side)
+### Free vs. paid (enforced server-side, flag-driven)
 
-- **Free**: all 4 templates, system fonts (Georgia, Arial), socials, CTA — with a "Made with Siggy" watermark.
-- **$19 unlock**: pro (Google) fonts rendered as name images, headshot upload, no watermark.
-- Enforcement lives on the server, not in the UI: `/api/render` strips `image`/`nameImage` and falls back to `DEFAULT_FREE_FONT` without a valid token (`enforceFreeTier` in `lib/render.tsx`); `/api/render-name` and `/api/assets` return 403 without one.
-- The editor mirrors this client-side (locked font/headshot states route to checkout) and downgrades stale pro drafts once access resolves as free.
+- **Current model**: everything is free — all templates, all 11 fonts, headshots, socials, CTA. The $19 unlock only removes the "Made with Siggy" watermark.
+- **`GATES` in `lib/billing/gates.ts`** controls feature gating. Flip `proFonts`/`headshot` to `true` to move those behind the unlock — server enforcement (`enforceFreeTier` in `lib/render.tsx`, 403s in `/api/render-name` + `/api/assets`), the editor's locked UI states, and stale-draft downgrading all activate automatically. Update the pricing card copy in `components/landing/pricing.tsx` to match if you flip them.
+- The watermark itself is always server-derived: `/api/render` verifies the HMAC token and only drops the watermark for valid tokens — never trust a client boolean.
 
 ## Environment Variables
 

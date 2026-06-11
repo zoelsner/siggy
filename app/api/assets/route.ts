@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
+import { GATES } from "@/lib/billing/gates";
 import { verifyAccessToken } from "@/lib/billing/token";
 import { saveAsset } from "@/lib/runtime";
 
@@ -9,12 +10,14 @@ export async function POST(request: Request) {
   const file = formData.get("file");
   const altValue = formData.get("alt");
 
-  // Headshot upload is a paid feature — verify the access token server-side
-  // so free users can't consume blob storage by calling the API directly.
-  const tokenValue = formData.get("token");
-  const claims = typeof tokenValue === "string" ? await verifyAccessToken(tokenValue) : null;
-  if (!claims) {
-    return NextResponse.json({ error: "unlock_required" }, { status: 403 });
+  // When headshots are gated, verify the access token server-side so free
+  // users can't consume blob storage by calling the API directly.
+  if (GATES.headshot) {
+    const tokenValue = formData.get("token");
+    const claims = typeof tokenValue === "string" ? await verifyAccessToken(tokenValue) : null;
+    if (!claims) {
+      return NextResponse.json({ error: "unlock_required" }, { status: 403 });
+    }
   }
 
   if (!(file instanceof File)) {

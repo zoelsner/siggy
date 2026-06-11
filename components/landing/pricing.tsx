@@ -9,9 +9,9 @@ export function Pricing() {
 
   const features = [
     "No “Made with Siggy” watermark",
-    "9 pro fonts, rendered as images so email clients can't break them",
-    "Headshot upload with crop & resize",
+    "Everything stays unlocked — all templates, fonts & headshots",
     "Lifetime access — no subscription",
+    "Direct email support",
   ];
 
   return (
@@ -30,8 +30,8 @@ export function Pricing() {
           ))}
         </ul>
         <p className="pricing-card__note">
-          The free editor includes all 4 templates, system fonts, social links &amp; CTA buttons —
-          with a small Siggy watermark.
+          Free includes everything too — all 4 templates, 11 fonts, headshots, socials &amp; CTA
+          buttons — with a small “Made with Siggy” watermark on your signature.
         </p>
         {!resolved ? null : unlocked ? (
           <a className="button button--primary button--large pricing-card__cta" href="/editor">

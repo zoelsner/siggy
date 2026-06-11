@@ -1,5 +1,6 @@
 import React from "react";
 
+import { GATES } from "./billing/gates";
 import { clientProfiles } from "./client-profiles";
 import { coerceSignatureDocument, getFilledSocials, isLocalOrigin, resolveUrlForHtml } from "./document";
 import { DEFAULT_FREE_FONT, isSystemFont } from "./fonts";
@@ -12,14 +13,16 @@ interface RenderOptions {
   unlocked?: boolean;
 }
 
-// Custom fonts (delivered as name images) and headshots are paid features.
-// Enforce here, not in the UI — the render API is reachable directly.
+// Strip whatever GATES marks as paid. Enforce here, not in the UI — the
+// render API is reachable directly.
 function enforceFreeTier(document: SignatureDocument): SignatureDocument {
+  if (!GATES.proFonts && !GATES.headshot) return document;
   return {
     ...document,
-    fontFamily: isSystemFont(document.fontFamily) ? document.fontFamily : DEFAULT_FREE_FONT,
-    image: null,
-    nameImage: null
+    fontFamily:
+      !GATES.proFonts || isSystemFont(document.fontFamily) ? document.fontFamily : DEFAULT_FREE_FONT,
+    image: GATES.headshot ? null : document.image,
+    nameImage: GATES.proFonts ? null : document.nameImage
   };
 }
 

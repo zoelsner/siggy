@@ -10,6 +10,7 @@ import {
 
 import { trackEvent } from "@/lib/analytics";
 import { useAccess } from "@/lib/billing";
+import { GATES } from "@/lib/billing/gates";
 import { createDefaultDocument } from "@/lib/default-document";
 import { touchDocument } from "@/lib/document";
 import { DEFAULT_FREE_FONT, fontFamilyMap, fontOptions, isSystemFont } from "@/lib/fonts";
@@ -87,17 +88,19 @@ export function StudioShell() {
     adapterRef.current.save(document);
   }, [document]);
 
-  // Once access resolves as free, downgrade any pro features left in the
-  // draft (pro font, headshot) so the preview matches what /api/render will
-  // actually produce on copy.
+  // Once access resolves as free, downgrade any gated features left in the
+  // draft so the preview matches what /api/render will actually produce on
+  // copy. No-op while GATES are all off.
   useEffect(() => {
     if (!resolved || unlocked) return;
     setDocument((current) => {
-      if (isSystemFont(current.fontFamily) && !current.image) return current;
+      const dropFont = GATES.proFonts && !isSystemFont(current.fontFamily);
+      const dropImage = GATES.headshot && current.image !== null;
+      if (!dropFont && !dropImage) return current;
       return touchDocument({
         ...current,
-        fontFamily: isSystemFont(current.fontFamily) ? current.fontFamily : DEFAULT_FREE_FONT,
-        image: null
+        fontFamily: dropFont ? DEFAULT_FREE_FONT : current.fontFamily,
+        image: dropImage ? null : current.image
       });
     });
   }, [resolved, unlocked]);
@@ -425,7 +428,7 @@ export function StudioShell() {
               <label>Font</label>
               <div className="inspector-font-grid">
                 {fontOptions.map((font) => {
-                  const locked = !unlocked && !font.system;
+                  const locked = GATES.proFonts && !unlocked && !font.system;
                   return (
                     <button
                       key={font.id}
@@ -446,7 +449,7 @@ export function StudioShell() {
                   );
                 })}
               </div>
-              {resolved && !unlocked ? (
+              {GATES.proFonts && resolved && !unlocked ? (
                 <p className="helper-text">
                   Pro fonts unlock with Siggy — $19 one-time.
                 </p>
@@ -563,9 +566,9 @@ export function StudioShell() {
               <span>Headshot & links</span>
             </summary>
             <p className="helper-text">
-              {unlocked
-                ? "Add a headshot directly from the signature preview. Optional fields still live behind the inline + Add field control."
-                : "Headshots are part of the $19 unlock. Optional fields still live behind the inline + Add field control."}
+              {GATES.headshot && !unlocked
+                ? "Headshots are part of the $19 unlock. Optional fields still live behind the inline + Add field control."
+                : "Add a headshot directly from the signature preview. Optional fields still live behind the inline + Add field control."}
             </p>
           </details>
 
@@ -594,7 +597,7 @@ export function StudioShell() {
         <span className="style-pill__label">Font</span>
         <div className="style-pill__fonts">
           {fontOptions.map((font) => {
-            const locked = !unlocked && !font.system;
+            const locked = GATES.proFonts && !unlocked && !font.system;
             return (
               <button
                 key={font.id}

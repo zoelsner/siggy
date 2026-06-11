@@ -2,6 +2,7 @@
 
 import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 
+import { GATES } from "@/lib/billing/gates";
 import { fontFamilyMap } from "@/lib/fonts";
 import { splitName } from "@/lib/templates";
 import type { AssetUploadResponse, SignatureDocument, SocialLink, SocialPlatform } from "@/lib/types";
@@ -144,6 +145,7 @@ export function SignatureEditor({
   const isCard = document.templateId === "card";
   const isClean = document.templateId === "clean";
   const supportsImage = document.templateId === "edge" || document.templateId === "card";
+  const headshotLocked = GATES.headshot && !unlocked;
   const fontFamily = fontFamilyMap[document.fontFamily] ?? fontFamilyMap["dm-sans"];
 
   const visible = useMemo(() => {
@@ -321,14 +323,14 @@ export function SignatureEditor({
         </div>
       ) : (
         <button
-          aria-label={unlocked ? "Add headshot" : "Headshot unlocks with Siggy — $19"}
+          aria-label={headshotLocked ? "Headshot unlocks with Siggy — $19" : "Add headshot"}
           className="sig-editor__avatar"
-          onClick={() => (unlocked ? fileInputRef.current?.click() : onUpsell("editor_headshot"))}
+          onClick={() => (headshotLocked ? onUpsell("editor_headshot") : fileInputRef.current?.click())}
           style={{ background: document.accentColor }}
           type="button"
         >
           <span className="sig-editor__avatar-initials">{initials}</span>
-          <span className="sig-editor__avatar-plus" aria-hidden="true">{unlocked ? "+" : "🔒"}</span>
+          <span className="sig-editor__avatar-plus" aria-hidden="true">{headshotLocked ? "🔒" : "+"}</span>
         </button>
       )}
       {isUploading ? <span className="sig-editor__avatar-status">Uploading…</span> : null}
