@@ -29,6 +29,7 @@ const accentChoices = [
   "#0d9488", // Teal       — bridge
   "#059669", // Emerald    — creator
   "#ea580c", // Sunset     — creator
+  "#E4F222", // Ramp       — brand lime
 ];
 
 const TEMPLATE_PILL_LABELS: Record<TemplateId, string> = {
