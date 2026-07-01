@@ -1,4 +1,5 @@
 import { createDefaultDocument } from "./default-document";
+import { fontOptions } from "./fonts";
 import type {
   ClientProfileId,
   SignatureDocument,
@@ -40,7 +41,7 @@ export function coerceSignatureDocument(input: unknown): SignatureDocument {
     phone: normalizeText(record.phone, fallback.phone, 32),
     website: normalizeUrl(record.website, fallback.website),
     accentColor: normalizeHexColor(record.accentColor, fallback.accentColor),
-    fontFamily: typeof record.fontFamily === "string" ? record.fontFamily : fallback.fontFamily,
+    fontFamily: pickFontFamily(record.fontFamily, fallback.fontFamily),
     image: normalizeImage(record.image),
     nameImage: normalizeImage(record.nameImage),
     socials: normalizeSocials(record.socials),
@@ -101,6 +102,13 @@ function pickTemplate(value: unknown, fallback: TemplateId): TemplateId {
 function pickClientProfile(value: unknown, fallback: ClientProfileId): ClientProfileId {
   return typeof value === "string" && clientProfileIds.includes(value as ClientProfileId)
     ? (value as ClientProfileId)
+    : fallback;
+}
+
+function pickFontFamily(value: unknown, fallback: string): string {
+  if (value === "space-grotesk" || value === "syne") return "libre-baskerville";
+  return typeof value === "string" && fontOptions.some((font) => font.id === value)
+    ? value
     : fallback;
 }
 
