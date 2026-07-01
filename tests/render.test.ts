@@ -30,6 +30,7 @@ describe("renderSignature", () => {
     const result = await renderSignature(
       {
         ...createFixture("full"),
+        templateId: "card", // the only photo template in the final lineup
         fontFamily: "fraunces"
       },
       {
@@ -47,6 +48,7 @@ describe("renderSignature", () => {
     const result = await renderSignature(
       {
         ...createFixture("full"),
+        templateId: "card", // the only photo template in the final lineup
         fontFamily: "fraunces"
       },
       {

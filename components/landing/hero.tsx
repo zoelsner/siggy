@@ -47,7 +47,7 @@ export function Hero() {
           </div>
           <div className="hero__stat">
             <dt>11</dt>
-            <dd>fonts &middot; 6 colors</dd>
+            <dd>fonts &middot; 8 colors</dd>
           </div>
           <div className="hero__stat">
             <dt>$19</dt>
