@@ -64,7 +64,11 @@ export function InlineField({
             : displayed;
       const text = displayText || " ";
       const horizontalPadding = Number.parseFloat(styles.paddingLeft) + Number.parseFloat(styles.paddingRight);
-      const nextWidth = Math.ceil(context.measureText(text).width + horizontalPadding + 6);
+      // Canvas measureText ignores CSS letter-spacing — without this, tracked
+      // uppercase fields (e.g. the Underline job title) clip their last character.
+      const letterSpacing = Number.parseFloat(styles.letterSpacing) || 0;
+      const trackingWidth = letterSpacing > 0 ? letterSpacing * text.length : 0;
+      const nextWidth = Math.ceil(context.measureText(text).width + trackingWidth + horizontalPadding + 6);
       const clampedWidth = Math.max(minWidth, nextWidth);
 
       if (clampedWidth !== measuredWidthRef.current) {
