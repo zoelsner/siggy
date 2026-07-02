@@ -59,7 +59,7 @@ lib/
 
 ### Free vs. paid (enforced server-side, flag-driven)
 
-- **Current model**: everything is free — all templates, all 11 fonts, headshots, socials, CTA. The $19 unlock only removes the "Made with Siggy" watermark.
+- **Current model**: everything is free — all templates, all 12 fonts, headshots, socials, CTA. The $19 unlock only removes the "Made with Siggy" watermark.
 - **`GATES` in `lib/billing/gates.ts`** controls feature gating. Flip `proFonts`/`headshot` to `true` to move those behind the unlock — server enforcement (`enforceFreeTier` in `lib/render.tsx`, 403s in `/api/render-name` + `/api/assets`), the editor's locked UI states, and stale-draft downgrading all activate automatically. Update the pricing card copy in `components/landing/pricing.tsx` to match if you flip them.
 - The watermark itself is always server-derived: `/api/render` verifies the HMAC token and only drops the watermark for valid tokens — never trust a client boolean.
 

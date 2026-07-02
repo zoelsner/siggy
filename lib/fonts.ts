@@ -20,6 +20,7 @@ export const fontOptions: FontOption[] = [
   { id: "playfair", name: "Playfair Display", google: "Playfair+Display" },
   { id: "bricolage", name: "Bricolage Grotesque", google: "Bricolage+Grotesque" },
   { id: "jetbrains-mono", name: "JetBrains Mono", google: "JetBrains+Mono" },
+  { id: "caveat", name: "Caveat", google: "Caveat" },
 ];
 
 export function getFontOption(id: string): FontOption {
@@ -45,6 +46,7 @@ export const fontFamilyMap: Record<string, string> = {
   "playfair": "'Playfair Display', Georgia, serif",
   "bricolage": "'Bricolage Grotesque', sans-serif",
   "jetbrains-mono": "'JetBrains Mono', 'SF Mono', Consolas, monospace",
+  "caveat": "'Caveat', cursive",
 };
 
 // Module-level cache for font buffers
