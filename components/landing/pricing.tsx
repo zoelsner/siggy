@@ -30,7 +30,7 @@ export function Pricing() {
           ))}
         </ul>
         <p className="pricing-card__note">
-          Free includes everything too — all 4 templates, 11 fonts, headshots, socials &amp; CTA
+          Free includes everything too — all 4 templates, 12 fonts, headshots, socials &amp; CTA
           buttons — with a small “Made with Siggy” watermark on your signature.
         </p>
         {!resolved ? null : unlocked ? (

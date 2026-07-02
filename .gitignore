@@ -13,7 +13,8 @@ test-results/
 .DS_Store
 .mcp.json
 .superpowers/
-.claude/
+.claude/*
+!.claude/agents/
 LAUNCH-PLAN.md
 tsconfig.tsbuildinfo
 mockups.html
