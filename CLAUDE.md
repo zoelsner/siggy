@@ -86,5 +86,5 @@ lib/
 ## Deployment
 
 - GitHub repo `zoelsner/siggy` → Vercel auto-deploy on push to `main`
-- Production URL: `siggy-orpin.vercel.app`
+- Production URL: `trysiggy.com`
 - Landing page at `/`, editor at `/editor`, terms at `/terms`

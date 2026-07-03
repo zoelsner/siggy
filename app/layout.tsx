@@ -5,7 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://siggy-orpin.vercel.app"),
+  metadataBase: new URL("https://trysiggy.com"),
   title: "Siggy — Email signatures that don't look like Arial 11pt",
   description:
     "An email signature builder that makes you look sharp in every inbox. $19, own it forever, no subscription.",
