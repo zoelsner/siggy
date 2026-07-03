@@ -33,9 +33,24 @@ Email signature builder for designers, creatives, and freelancers. Pick a templa
 
 ```bash
 npm install
-cp .env.local.example .env.local   # add BLOB_READ_WRITE_TOKEN, STRIPE_SECRET_KEY, STRIPE_PRICE_ID, SIGGY_TOKEN_SECRET
+cp .env.local.example .env.local
 npm run dev                         # http://localhost:3000
 ```
+
+Add `BLOB_READ_WRITE_TOKEN`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+`STRIPE_PRICE_ID`, and `SIGGY_TOKEN_SECRET` in `.env.local` and Vercel. Get
+Stripe API keys from the Stripe Dashboard; do not commit real keys.
+
+To create the Stripe product and default one-time price from the blueprint:
+
+```bash
+STRIPE_SECRET_KEY=sk_test_your_secret_key_from_stripe_dashboard npm run stripe:setup-product
+```
+
+Store the printed `STRIPE_PRODUCT_ID` and `STRIPE_PRICE_ID` in `.env.local` and
+Vercel. Configure a Stripe webhook endpoint at
+`https://trysiggy.com/api/billing/webhook` for `checkout.session.completed`, then
+store its signing secret as `STRIPE_WEBHOOK_SECRET`.
 
 For tests:
 

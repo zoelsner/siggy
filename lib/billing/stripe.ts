@@ -1,16 +1,12 @@
 import Stripe from "stripe";
 
-// Pin to the SDK's current typed version. Upgrading `stripe` may surface a TS
-// error here, which is intentional — it forces a conscious bump.
-const API_VERSION = "2026-04-22.dahlia" as const;
-
 let cached: Stripe | null = null;
 
 function client(): Stripe {
   if (cached) return cached;
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY not configured");
-  cached = new Stripe(key, { apiVersion: API_VERSION });
+  cached = new Stripe(key);
   return cached;
 }
 
@@ -44,10 +40,40 @@ export async function createCheckoutSession(source: CheckoutSource = "landing"):
     cancel_url: source === "editor" ? `${base}/editor` : `${base}/#pricing`,
     allow_promotion_codes: true,
     automatic_tax: { enabled: false },
+    metadata: {
+      product: "siggy_lifetime_access",
+      source,
+    },
   });
 
   if (!session.url) throw new Error("Stripe did not return a checkout URL");
   return { url: session.url };
+}
+
+export function constructWebhookEvent(payload: string, signature: string): Stripe.Event {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) throw new Error("STRIPE_WEBHOOK_SECRET not configured");
+  return client().webhooks.constructEvent(payload, signature, secret);
+}
+
+export async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
+  if (session.mode !== "payment") return;
+
+  if (session.payment_status !== "paid") {
+    console.warn("[billing/webhook] checkout completed without paid status", {
+      sessionId: session.id,
+      paymentStatus: session.payment_status,
+    });
+    return;
+  }
+
+  // Siggy is intentionally accountless. The paid session is redeemed into a
+  // local HMAC access token when Stripe redirects the customer back to /editor.
+  console.info("[billing/webhook] checkout.session.completed", {
+    sessionId: session.id,
+    amountTotal: session.amount_total,
+    currency: session.currency,
+  });
 }
 
 export async function isSessionPaid(sessionId: string): Promise<boolean> {
