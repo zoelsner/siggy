@@ -7,9 +7,11 @@ import { Hero } from "@/components/landing/hero";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { LandingNav } from "@/components/landing/nav";
 import { Pricing } from "@/components/landing/pricing";
+import { ProfessionSections } from "@/components/landing/profession-sections";
 import { Templates } from "@/components/landing/templates";
 import { createDefaultDocument } from "@/lib/default-document";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
+import type { Profession } from "@/lib/professions";
 import type { SignatureDocument, TemplateId } from "@/lib/types";
 
 const draftAdapter = createBrowserDraftAdapter();
@@ -19,7 +21,7 @@ function persistDraft(patch: Partial<SignatureDocument>) {
   draftAdapter.save({ ...doc, ...patch });
 }
 
-export function LandingPage() {
+export function LandingPage({ profession }: { profession?: Profession }) {
   const [name, setName] = useState("Sarah Chen");
   const [accent, setAccent] = useState("#4f46e5");
 
@@ -41,8 +43,17 @@ export function LandingPage() {
   return (
     <div className="landing">
       <LandingNav />
-      <Hero name={name} accent={accent} onNameChange={handleNameChange} onAccentChange={handleAccentChange} />
+      <Hero
+        name={name}
+        accent={accent}
+        onNameChange={handleNameChange}
+        onAccentChange={handleAccentChange}
+        eyebrow={profession ? `The 30-second signature for ${profession.plural}` : undefined}
+        headline={profession?.headline}
+        subtitle={profession?.subtitle}
+      />
       <Templates name={name} accent={accent} onSelectTemplate={handleSelectTemplate} />
+      {profession ? <ProfessionSections profession={profession} /> : null}
       <HowItWorks />
       <Pricing />
       <LandingFooter />

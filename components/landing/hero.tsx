@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { trackEvent } from "@/lib/analytics";
 import { useAccess } from "@/lib/billing";
 import { splitName } from "@/lib/templates";
@@ -10,26 +12,36 @@ export function Hero({
   name,
   accent,
   onNameChange,
-  onAccentChange
+  onAccentChange,
+  eyebrow = "The 30-second signature",
+  headline = (
+    <>
+      Type your name.<br />Get a sharp signature.
+    </>
+  ),
+  subtitle = (
+    <>
+      Try it right here — no account, no email, no &ldquo;free 14-day trial.&rdquo;
+      Copy the HTML when it looks right and paste into Gmail.
+    </>
+  )
 }: {
   name: string;
   accent: string;
   onNameChange: (value: string) => void;
   onAccentChange: (color: string) => void;
+  eyebrow?: React.ReactNode;
+  headline?: React.ReactNode;
+  subtitle?: React.ReactNode;
 }) {
   const { unlocked, resolved, startCheckout } = useAccess();
 
   return (
     <section className="hero hero--split">
       <div className="hero__left">
-        <div className="hero__eyebrow">The 30-second signature</div>
-        <h1 className="hero__headline">
-          Type your name.<br />Get a sharp signature.
-        </h1>
-        <p className="hero__subtitle">
-          Try it right here — no account, no email, no &ldquo;free 14-day trial.&rdquo;
-          Copy the HTML when it looks right and paste into Gmail.
-        </p>
+        <div className="hero__eyebrow">{eyebrow}</div>
+        <h1 className="hero__headline">{headline}</h1>
+        <p className="hero__subtitle">{subtitle}</p>
         <div className="hero__actions">
           {!resolved ? null : unlocked ? (
             <a className="button button--primary button--large" href="/editor">

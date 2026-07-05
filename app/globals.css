@@ -3191,13 +3191,23 @@ select {
 
 .landing-footer {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 16px;
   padding: 32px 0;
   font-size: 12px;
   color: var(--text-soft);
   border-top: 1px solid var(--border);
+}
+
+.landing-footer__row,
+.landing-footer__professions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
 }
 
 .landing-footer a {
@@ -3207,6 +3217,72 @@ select {
 
 .landing-footer a:hover {
   color: var(--text-dim);
+}
+
+/* Profession landing page sections */
+
+.profession-needs {
+  padding: 48px 0 24px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.profession-needs__title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: center;
+  margin: 0 0 32px;
+}
+
+.profession-needs__list {
+  display: grid;
+  gap: 16px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.profession-needs__list li {
+  padding: 20px 24px;
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.profession-faq {
+  padding: 24px 0 48px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.profession-faq__title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: center;
+  margin: 0 0 32px;
+}
+
+.profession-faq__list {
+  display: grid;
+  gap: 24px;
+}
+
+.profession-faq__question {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.profession-faq__answer {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin: 0;
 }
 
 /* ---- Responsive ---- */
