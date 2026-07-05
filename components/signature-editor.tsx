@@ -1,6 +1,6 @@
 "use client";
 
-import { type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { GATES } from "@/lib/billing/gates";
 import { fontFamilyMap } from "@/lib/fonts";
@@ -76,6 +76,17 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function Removable({ label, onRemove, children }: { label: string; onRemove: () => void; children: ReactNode }) {
+  return (
+    <span className="sig-editor__removable">
+      {children}
+      <button aria-label={`Remove ${label}`} className="sig-editor__remove" onClick={onRemove} type="button">
+        ×
+      </button>
+    </span>
+  );
+}
+
 function getCroppedImageBlob(draft: CropDraft): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -132,6 +143,7 @@ export function SignatureEditor({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cropDragRef = useRef<CropDrag | null>(null);
   const cropDraftRef = useRef<CropDraft | null>(null);
+  const addWrapRef = useRef<HTMLDivElement>(null);
 
   cropDraftRef.current = cropDraft;
   useEffect(() => {
@@ -139,6 +151,24 @@ export function SignatureEditor({
       if (cropDraftRef.current) URL.revokeObjectURL(cropDraftRef.current.url);
     };
   }, []);
+
+  useEffect(() => {
+    if (!addOpen) return;
+
+    function handlePointerDown(event: globalThis.PointerEvent) {
+      if (!addWrapRef.current?.contains(event.target as Node)) setAddOpen(false);
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setAddOpen(false);
+    }
+
+    window.document.addEventListener("pointerdown", handlePointerDown);
+    window.document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.document.removeEventListener("pointerdown", handlePointerDown);
+      window.document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [addOpen]);
 
   const isBold = document.templateId === "bold";
   const isEdge = document.templateId === "edge";
@@ -187,10 +217,18 @@ export function SignatureEditor({
     onChange((d) => updateSocial(d, platform, value));
   }
   function setCtaText(value: string) {
-    onChange((d) => ({ ...d, cta: { text: value, url: d.cta?.url ?? "" } }));
+    onChange((d) => {
+      const url = d.cta?.url ?? "";
+      if (!value && !url) return { ...d, cta: null };
+      return { ...d, cta: { text: value, url } };
+    });
   }
   function setCtaUrl(value: string) {
-    onChange((d) => ({ ...d, cta: { text: d.cta?.text ?? "", url: value } }));
+    onChange((d) => {
+      const text = d.cta?.text ?? "";
+      if (!text && !value) return { ...d, cta: null };
+      return { ...d, cta: { text, url: value } };
+    });
   }
 
   function revealField(key: OptionalFieldKey) {
@@ -198,6 +236,29 @@ export function SignatureEditor({
     next.add(key);
     setRevealed(next);
     setAddOpen(false);
+  }
+
+  function removeField(key: OptionalFieldKey) {
+    onChange((d) => {
+      switch (key) {
+        case "phone":
+          return { ...d, phone: "" };
+        case "website":
+          return { ...d, website: "" };
+        case "linkedin":
+        case "x":
+        case "instagram":
+        case "github":
+          return updateSocial(d, key, "");
+        case "cta":
+          return { ...d, cta: null };
+      }
+    });
+    setRevealed((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
   }
 
   function clearCropDraft() {
@@ -357,17 +418,19 @@ export function SignatureEditor({
         .map((platform, idx) => (
           <span className="sig-editor__social" key={platform}>
             {idx > 0 ? <span aria-hidden="true" className="sig-editor__social-sep">·</span> : null}
-            <span className="sig-editor__social-label">{SOCIAL_LABEL[platform]}</span>
-            <InlineField
-              id={`sig-social-${platform}`}
-              label={SOCIAL_LABEL[platform]}
-              value={getSocial(document, platform)?.url ?? ""}
-              onChange={(v) => setSocial(platform, v)}
-              onFocus={onFieldFocus}
-              placeholder={SOCIAL_PLACEHOLDER[platform]}
-              className="sig-editor__social-input"
-              autoFocus={!getSocial(document, platform)?.url}
-            />
+            <Removable label={SOCIAL_LABEL[platform]} onRemove={() => removeField(platform)}>
+              <span className="sig-editor__social-label">{SOCIAL_LABEL[platform]}</span>
+              <InlineField
+                id={`sig-social-${platform}`}
+                label={SOCIAL_LABEL[platform]}
+                value={getSocial(document, platform)?.url ?? ""}
+                onChange={(v) => setSocial(platform, v)}
+                onFocus={onFieldFocus}
+                placeholder={SOCIAL_PLACEHOLDER[platform]}
+                className="sig-editor__social-input"
+                autoFocus={!getSocial(document, platform)?.url}
+              />
+            </Removable>
           </span>
         ))}
     </div>
@@ -375,31 +438,33 @@ export function SignatureEditor({
 
   const ctaBlock = visible.has("cta") ? (
     <div className="sig-editor__cta">
-      <InlineField
-        id="sig-cta-text"
-        label="CTA label"
-        value={document.cta?.text ?? ""}
-        onChange={setCtaText}
-        onFocus={onFieldFocus}
-        placeholder="Book a call"
-        className="sig-editor__cta-text"
-        autoFocus={!document.cta?.text}
-      />
-      <span aria-hidden="true" className="sig-editor__cta-arrow">→</span>
-      <InlineField
-        id="sig-cta-url"
-        label="CTA link"
-        value={document.cta?.url ?? ""}
-        onChange={setCtaUrl}
-        onFocus={onFieldFocus}
-        placeholder="calendly.com/you"
-        className="sig-editor__cta-url"
-      />
+      <Removable label="call-to-action" onRemove={() => removeField("cta")}>
+        <InlineField
+          id="sig-cta-text"
+          label="CTA label"
+          value={document.cta?.text ?? ""}
+          onChange={setCtaText}
+          onFocus={onFieldFocus}
+          placeholder="Book a call"
+          className="sig-editor__cta-text"
+          autoFocus={!document.cta?.text}
+        />
+        <span aria-hidden="true" className="sig-editor__cta-arrow">→</span>
+        <InlineField
+          id="sig-cta-url"
+          label="CTA link"
+          value={document.cta?.url ?? ""}
+          onChange={setCtaUrl}
+          onFocus={onFieldFocus}
+          placeholder="calendly.com/you"
+          className="sig-editor__cta-url"
+        />
+      </Removable>
     </div>
   ) : null;
 
   const addFieldBlock = hidden.length > 0 ? (
-    <div className="sig-editor__add-wrap">
+    <div className="sig-editor__add-wrap" ref={addWrapRef}>
       <button
         aria-expanded={addOpen}
         className="sig-editor__add"
@@ -520,32 +585,36 @@ export function SignatureEditor({
                 </div>
                 {visible.has("phone") ? (
                   <div className="sig-editor__underline-contact-row">
-                    <span className="sig-editor__underline-icon" aria-hidden="true">☏</span>
-                    <InlineField
-                      id="sig-phone"
-                      label="Phone"
-                      value={document.phone}
-                      onChange={setPhone}
-                      onFocus={onFieldFocus}
-                      placeholder="+1 (555) 000-0000"
-                      className="sig-editor__underline-contact-input"
-                      autoFocus={!document.phone}
-                    />
+                    <Removable label="Phone" onRemove={() => removeField("phone")}>
+                      <span className="sig-editor__underline-icon" aria-hidden="true">☏</span>
+                      <InlineField
+                        id="sig-phone"
+                        label="Phone"
+                        value={document.phone}
+                        onChange={setPhone}
+                        onFocus={onFieldFocus}
+                        placeholder="+1 (555) 000-0000"
+                        className="sig-editor__underline-contact-input"
+                        autoFocus={!document.phone}
+                      />
+                    </Removable>
                   </div>
                 ) : null}
                 {visible.has("website") ? (
                   <div className="sig-editor__underline-contact-row">
-                    <span className="sig-editor__underline-icon" aria-hidden="true">⊕</span>
-                    <InlineField
-                      id="sig-website"
-                      label="Website"
-                      value={websiteDisplay}
-                      onChange={setWebsite}
-                      onFocus={onFieldFocus}
-                      placeholder="yoursite.com"
-                      className="sig-editor__underline-contact-input sig-editor__underline-contact-input--accent"
-                      autoFocus={!document.website}
-                    />
+                    <Removable label="Website" onRemove={() => removeField("website")}>
+                      <span className="sig-editor__underline-icon" aria-hidden="true">⊕</span>
+                      <InlineField
+                        id="sig-website"
+                        label="Website"
+                        value={websiteDisplay}
+                        onChange={setWebsite}
+                        onFocus={onFieldFocus}
+                        placeholder="yoursite.com"
+                        className="sig-editor__underline-contact-input sig-editor__underline-contact-input--accent"
+                        autoFocus={!document.website}
+                      />
+                    </Removable>
                   </div>
                 ) : null}
               </div>
@@ -606,7 +675,7 @@ export function SignatureEditor({
                     minWidth={140}
                   />
                   {visible.has("phone") ? (
-                    <>
+                    <Removable label="Phone" onRemove={() => removeField("phone")}>
                       <span aria-hidden="true" className="sig-editor__card-contact-sep">|</span>
                       <InlineField
                         id="sig-phone"
@@ -618,20 +687,22 @@ export function SignatureEditor({
                         className="sig-editor__card-contact-input"
                         autoFocus={!document.phone}
                       />
-                    </>
+                    </Removable>
                   ) : null}
                 </div>
                 {visible.has("website") ? (
-                  <InlineField
-                    id="sig-website"
-                    label="Website"
-                    value={websiteDisplay}
-                    onChange={setWebsite}
-                    onFocus={onFieldFocus}
-                    placeholder="yoursite.com"
-                    className="sig-editor__card-contact-input sig-editor__card-contact-input--accent"
-                    autoFocus={!document.website}
-                  />
+                  <Removable label="Website" onRemove={() => removeField("website")}>
+                    <InlineField
+                      id="sig-website"
+                      label="Website"
+                      value={websiteDisplay}
+                      onChange={setWebsite}
+                      onFocus={onFieldFocus}
+                      placeholder="yoursite.com"
+                      className="sig-editor__card-contact-input sig-editor__card-contact-input--accent"
+                      autoFocus={!document.website}
+                    />
+                  </Removable>
                 ) : null}
               </div>
               {socialsBlock}
@@ -704,7 +775,7 @@ export function SignatureEditor({
               minWidth={140}
             />
             {visible.has("phone") ? (
-              <>
+              <Removable label="Phone" onRemove={() => removeField("phone")}>
                 <span aria-hidden="true" className="sig-editor__contact-sep">|</span>
                 <InlineField
                   id="sig-phone"
@@ -716,10 +787,10 @@ export function SignatureEditor({
                   className="sig-editor__contact-input"
                   autoFocus={!document.phone}
                 />
-              </>
+              </Removable>
             ) : null}
             {visible.has("website") ? (
-              <>
+              <Removable label="Website" onRemove={() => removeField("website")}>
                 <span aria-hidden="true" className="sig-editor__contact-sep">|</span>
                 <InlineField
                   id="sig-website"
@@ -731,7 +802,7 @@ export function SignatureEditor({
                   className="sig-editor__contact-input"
                   autoFocus={!document.website}
                 />
-              </>
+              </Removable>
             ) : null}
           </div>
 
@@ -787,7 +858,7 @@ export function SignatureEditor({
                 minWidth={140}
               />
               {visible.has("phone") ? (
-                <>
+                <Removable label="Phone" onRemove={() => removeField("phone")}>
                   <span aria-hidden="true" className="sig-editor__clean-contact-sep">·</span>
                   <InlineField
                     id="sig-phone"
@@ -799,10 +870,10 @@ export function SignatureEditor({
                     className="sig-editor__clean-contact-input"
                     autoFocus={!document.phone}
                   />
-                </>
+                </Removable>
               ) : null}
               {visible.has("website") ? (
-                <>
+                <Removable label="Website" onRemove={() => removeField("website")}>
                   <span aria-hidden="true" className="sig-editor__clean-contact-sep">·</span>
                   <InlineField
                     id="sig-website"
@@ -814,7 +885,7 @@ export function SignatureEditor({
                     className="sig-editor__clean-contact-input"
                     autoFocus={!document.website}
                   />
-                </>
+                </Removable>
               ) : null}
             </div>
             {socialsBlock}

@@ -226,6 +226,7 @@ export function StudioShell() {
   }
 
   function handleReset() {
+    if (!window.confirm("Reset your signature? This clears all fields and starts over.")) return;
     setDocument(createDefaultDocument());
     trackEvent("reset_clicked", { templateId: document.templateId });
   }
