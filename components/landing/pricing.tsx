@@ -93,6 +93,9 @@ export function Pricing() {
             30-day refund — just reply to your receipt. Free version has everything too, with a
             small watermark.
           </p>
+          <p className="pricing-card__error">
+            Already bought? <a href="/restore">Restore access</a>
+          </p>
         </div>
 
         <div className="pricing-stack-col">

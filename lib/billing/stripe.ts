@@ -1,5 +1,8 @@
 import Stripe from "stripe";
 
+import { sendAccessEmail } from "@/lib/billing/email";
+import { signAccessToken } from "@/lib/billing/token";
+
 let cached: Stripe | null = null;
 
 function client(): Stripe {
@@ -74,6 +77,24 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session):
     amountTotal: session.amount_total,
     currency: session.currency,
   });
+
+  // Also email a permanent access link as a receipt, so the buyer has a way
+  // back in if they lose the localStorage token later. Best-effort only — an
+  // email failure here must never fail the webhook (Stripe retries on 5xx).
+  const email = session.customer_details?.email;
+  if (!email) return;
+
+  if (!process.env.RESEND_API_KEY) {
+    console.info("[billing/webhook] RESEND_API_KEY not configured, skipping receipt email");
+    return;
+  }
+
+  try {
+    const token = await signAccessToken(session.id);
+    await sendAccessEmail({ to: email, token, kind: "receipt" });
+  } catch (err) {
+    console.error("[billing/webhook] receipt email failed", err);
+  }
 }
 
 export async function isSessionPaid(sessionId: string): Promise<boolean> {
@@ -85,6 +106,21 @@ export async function isSessionPaid(sessionId: string): Promise<boolean> {
     const ageMs = Date.now() - session.created * 1000;
     if (ageMs < 0 || ageMs > MAX_SESSION_AGE_MS) return false;
     return true;
+  } catch {
+    return false;
+  }
+}
+
+// Restore-by-email has no time window — it's a lifetime product, so a
+// purchase from months ago must still qualify. Unlike isSessionPaid, this
+// never bounds session age.
+export async function findPaidSessionByEmail(email: string): Promise<boolean> {
+  try {
+    const sessions = await client().checkout.sessions.list({
+      customer_details: { email },
+      limit: 100,
+    });
+    return sessions.data.some((session) => session.payment_status === "paid");
   } catch {
     return false;
   }

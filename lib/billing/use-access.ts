@@ -36,6 +36,13 @@ async function redeemSession(sessionId: string): Promise<string | null> {
   }
 }
 
+function storeAndCleanUrl(token: string, params: URLSearchParams, param: string): void {
+  localStorage.setItem(STORAGE_KEY, token);
+  params.delete(param);
+  const next = window.location.pathname + (params.toString() ? `?${params}` : "");
+  window.history.replaceState({}, "", next);
+}
+
 export function useAccess() {
   const [unlocked, setUnlocked] = useState(false);
   const [resolved, setResolved] = useState(false);
@@ -53,14 +60,10 @@ export function useAccess() {
         const redeemed = await redeemSession(sessionId);
         if (cancelled) return;
         if (redeemed) {
-          localStorage.setItem(STORAGE_KEY, redeemed);
+          storeAndCleanUrl(redeemed, params, "session_id");
           setToken(redeemed);
           setUnlocked(true);
           setResolved(true);
-          // Remove session_id from URL without reloading.
-          params.delete("session_id");
-          const next = window.location.pathname + (params.toString() ? `?${params}` : "");
-          window.history.replaceState({}, "", next);
           return;
         }
         // The user just came back from a paid checkout but redemption failed —
@@ -68,7 +71,21 @@ export function useAccess() {
         setError("redeem_failed");
       }
 
-      // 2. Verify any cached token.
+      // 2. Check for ?access_token=... from a restore/receipt email link.
+      const accessToken = params.get("access_token");
+      if (accessToken) {
+        const valid = await verifyToken(accessToken);
+        if (cancelled) return;
+        if (valid) {
+          storeAndCleanUrl(accessToken, params, "access_token");
+          setToken(accessToken);
+          setUnlocked(true);
+          setResolved(true);
+          return;
+        }
+      }
+
+      // 3. Verify any cached token.
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const valid = await verifyToken(stored);

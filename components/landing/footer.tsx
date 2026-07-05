@@ -5,6 +5,7 @@ export function LandingFooter() {
     <footer className="landing-footer">
       <span>&copy; {new Date().getFullYear()} Siggy</span>
       <a href="/terms">Terms</a>
+      <a href="/restore">Restore access</a>
       <a href={`mailto:${SUPPORT_EMAIL}`}>Contact</a>
     </footer>
   );

@@ -28,7 +28,9 @@ app/
       webhook/         # POST raw Stripe webhook → verifies signature + handles checkout.session.completed
       verify-session/  # POST { sessionId } → exchanges paid Stripe session for HMAC token
       verify-token/    # POST { token } → verifies HMAC signature (no Stripe call)
+      restore/         # POST { email } → emails a fresh access link if a paid session exists (always 200 { ok: true })
     events/            # Analytics stub (console.log only)
+  restore/page.tsx     # "Restore access by email" form
 
 components/
   studio-shell.tsx     # Main editor UI (sidebar + preview + template strip)
@@ -40,9 +42,10 @@ lib/
   fonts.ts             # Font options, fontFamilyMap, Google Fonts fetching
   billing/
     index.ts           # Public surface: { useAccess }
-    use-access.ts      # Client hook — { unlocked, resolved, startCheckout }; redeems ?session_id=… on mount
-    stripe.ts          # Stripe SDK adapter — createCheckoutSession, isSessionPaid
+    use-access.ts      # Client hook — { unlocked, resolved, startCheckout }; redeems ?session_id=… and ?access_token=… on mount
+    stripe.ts          # Stripe SDK adapter — createCheckoutSession, isSessionPaid, findPaidSessionByEmail
     token.ts           # HMAC sign/verify for the access token (Web Crypto)
+    email.ts           # sendAccessEmail — plain fetch to the Resend API (no SDK dep)
   runtime.ts           # Vercel Blob storage (saveAsset)
   render.tsx           # Server-side signature rendering pipeline (+ free-tier enforcement)
   site.ts              # SITE_URL + SUPPORT_EMAIL — single source for outward-facing links
@@ -58,6 +61,7 @@ lib/
 - The editor mounts → `useAccess()` detects `session_id`, calls `POST /api/billing/verify-session` which (a) confirms `payment_status === 'paid'` against Stripe and (b) returns an HMAC-signed access token. Token goes into `localStorage` as `siggy_access`.
 - Returning users: token verified locally on every load via `POST /api/billing/verify-token` — pure HMAC check, no Stripe call. Lifetime = no token expiry.
 - No license keys, no overlay, no DB. The signed token IS the proof of purchase.
+- **Restore by email**: the webhook also emails a permanent access link (`/editor?access_token=…`) as a receipt when a checkout completes, and `/restore` lets a buyer re-request that link by email at any time — `POST /api/billing/restore` looks up any paid Stripe Checkout Session for that email (no time window, since it's a lifetime purchase) and, if found, emails a fresh token via `sendAccessEmail`. The endpoint always responds `{ ok: true }` and never returns the token directly, so it can't be used to probe which emails have purchased. Requires `RESEND_API_KEY`; without it, the webhook skips the receipt email silently and `/restore` still returns `{ ok: true }` while logging the failure.
 
 ### Free vs. paid (enforced server-side, flag-driven)
 
@@ -78,6 +82,7 @@ lib/
 | `SIGGY_TOKEN_SECRET` | `.env.local` + Vercel | 32-byte hex string used to HMAC-sign access tokens — rotating it invalidates all existing tokens |
 | `NEXT_PUBLIC_SITE_URL` | optional | Overrides the watermark/link URL in `lib/site.ts` (falls back to the production Vercel URL) — set when a custom domain is live |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | optional | Overrides the support mailto in `lib/site.ts` |
+| `RESEND_API_KEY` | `.env.local` + Vercel | Resend API auth for purchase receipt + restore-access emails (`lib/billing/email.ts`) |
 
 ## Gotchas
 
@@ -93,4 +98,4 @@ lib/
 
 - GitHub repo `zoelsner/siggy` → Vercel auto-deploy on push to `main`
 - Production URL: `trysiggy.com`
-- Landing page at `/`, editor at `/editor`, terms at `/terms`
+- Landing page at `/`, editor at `/editor`, terms at `/terms`, restore access at `/restore`
