@@ -24,7 +24,10 @@ export function Hero({
       Try it right here — no account, no email, no &ldquo;free 14-day trial.&rdquo;
       Copy the HTML when it looks right and paste into Gmail.
     </>
-  )
+  ),
+  title = "Head of Design",
+  company = "Meridian Studio",
+  email = "sarah@meridian.design"
 }: {
   name: string;
   accent: string;
@@ -33,6 +36,9 @@ export function Hero({
   eyebrow?: React.ReactNode;
   headline?: React.ReactNode;
   subtitle?: React.ReactNode;
+  title?: string;
+  company?: string;
+  email?: string;
 }) {
   const { unlocked, resolved, startCheckout } = useAccess();
 
@@ -93,8 +99,8 @@ export function Hero({
               <div className="hero-mini-editor__rail">
                 <span className="hero-mini-editor__eyebrow">Your details</span>
                 <HeroMiniField label="Name" value={name} onChange={onNameChange} focused />
-                <HeroMiniField label="Title" value="Head of Design" />
-                <HeroMiniField label="Email" value="sarah@meridian.design" />
+                <HeroMiniField label="Title" value={title} />
+                <HeroMiniField label="Email" value={email} />
                 <span className="hero-mini-editor__eyebrow hero-mini-editor__eyebrow--mt">Color</span>
                 <div className="hero-mini-editor__swatches">
                   {PALETTE.map((c) => (
@@ -110,7 +116,7 @@ export function Hero({
                 </div>
               </div>
               <div className="hero-mini-editor__preview">
-                <HeroMiniSignature name={name} accent={accent} />
+                <HeroMiniSignature name={name} accent={accent} title={title} company={company} email={email} />
               </div>
             </div>
             <div className="hero-mini-footer">
@@ -156,7 +162,19 @@ function HeroMiniField({
   );
 }
 
-function HeroMiniSignature({ name, accent }: { name: string; accent: string }) {
+function HeroMiniSignature({
+  name,
+  accent,
+  title,
+  company,
+  email
+}: {
+  name: string;
+  accent: string;
+  title: string;
+  company: string;
+  email: string;
+}) {
   const { first, last } = splitName(name);
   return (
     <div className="hero-mini-sig">
@@ -171,9 +189,9 @@ function HeroMiniSignature({ name, accent }: { name: string; accent: string }) {
             </>
           ) : null}
         </div>
-        <div className="hero-mini-sig__title">Head of Design · Meridian Studio</div>
+        <div className="hero-mini-sig__title">{`${title} · ${company}`}</div>
         <div className="hero-mini-sig__contact">
-          <span style={{ color: accent }}>sarah@meridian.design</span>
+          <span style={{ color: accent }}>{email}</span>
           <span className="hero-mini-sig__sep">|</span>
           <span>+1 (415) 555-0142</span>
         </div>

@@ -14,6 +14,8 @@ export interface Profession {
   exampleName: string;
   exampleTitle: string;
   exampleCompany: string;
+  exampleEmail: string;
+  accent: string;
   needs: string[];
   faqs: ProfessionFaq[];
 }
@@ -30,8 +32,10 @@ export const PROFESSIONS: Profession[] = [
     subtitle:
       "Buyers and sellers judge you before they finish reading your first email. Get your license number, brokerage, and headshot into a signature that looks right in Gmail and on a phone screen.",
     exampleName: "Maria Alvarez",
-    exampleTitle: "Realtor® · Compass",
-    exampleCompany: "Compass",
+    exampleTitle: "Realtor®",
+    exampleCompany: "Harbor Gate Realty",
+    exampleEmail: "maria@harborgaterealty.com",
+    accent: "#2f6a52",
     needs: [
       "Your license number and brokerage name, formatted the way your state's real estate commission requires on business communications.",
       "A tappable phone number — most of your leads open your email on a phone between showings, and a non-clickable number is a lost callback.",
@@ -67,8 +71,10 @@ export const PROFESSIONS: Profession[] = [
     subtitle:
       "Clients and opposing counsel form an impression from your email before they read the first line. Get your firm, practice area, and bar admission into a signature that looks credible in any inbox.",
     exampleName: "David Okonkwo",
-    exampleTitle: "Associate · Whitfield & Marsh LLP",
+    exampleTitle: "Associate",
     exampleCompany: "Whitfield & Marsh LLP",
+    exampleEmail: "david@whitfieldmarsh.com",
+    accent: "#1d1b19",
     needs: [
       "Your firm name and practice area stated plainly — clients rarely remember the full name of the firm they hired, and a clear signature saves them a Google search.",
       "Bar admission or jurisdiction where relevant, especially for solo practitioners and firms that get referrals across state lines.",
@@ -104,8 +110,10 @@ export const PROFESSIONS: Profession[] = [
     subtitle:
       "You're selling judgment and expertise, and every email is a small proof point. Get your positioning, company, and booking link into a signature that reads as senior, not scrappy.",
     exampleName: "Priya Nair",
-    exampleTitle: "Principal · Nair Strategy Partners",
+    exampleTitle: "Principal",
     exampleCompany: "Nair Strategy Partners",
+    exampleEmail: "priya@nairstrategy.com",
+    accent: "#5a4ba0",
     needs: [
       "A one-line title that states your specialty, not just \"Consultant\" — clients hire outcomes, and a vague title makes them re-explain the engagement scope every time.",
       "A scheduling link so a prospective client can book time without the five-email back-and-forth that stalls most sales cycles.",
@@ -143,6 +151,8 @@ export const PROFESSIONS: Profession[] = [
     exampleName: "Jonah Reyes",
     exampleTitle: "Freelance Brand Designer",
     exampleCompany: "Independent",
+    exampleEmail: "jonah@reyesdesign.com",
+    accent: "#c9583d",
     needs: [
       "A link to your portfolio or latest work, since a freelancer's best sales tool is proof, and a signature is free real estate to show it on every email.",
       "A clear discipline in your title — \"Freelance Brand Designer\" tells a client exactly what to hire you for, instead of a vague \"Creative\" that invites scope confusion later.",
@@ -178,8 +188,10 @@ export const PROFESSIONS: Profession[] = [
     subtitle:
       "Candidates get dozens of recruiter emails a week and screen most of them in a glance. Get your agency, a direct line, and your LinkedIn into a signature that reads as a real person, not a mail-merge.",
     exampleName: "Ben Foster",
-    exampleTitle: "Senior Technical Recruiter · Northgate Talent",
+    exampleTitle: "Senior Technical Recruiter",
     exampleCompany: "Northgate Talent",
+    exampleEmail: "ben@northgatetalent.com",
+    accent: "#4f46e5",
     needs: [
       "A direct phone line, not a shared team inbox number — candidates deciding whether an opportunity is legitimate will often check if a real human answers.",
       "Your LinkedIn profile link, since it's the fastest way for a skeptical candidate to verify you're a real recruiter at a real firm before they reply with their resume.",
@@ -215,8 +227,10 @@ export const PROFESSIONS: Profession[] = [
     subtitle:
       "Clients are trusting you with decisions that affect their retirement — your signature should look as considered as your advice. Get your credentials, firm, and required disclosures into one clean layout.",
     exampleName: "Elena Petrova",
-    exampleTitle: "CFP® · Petrova Wealth Advisors",
+    exampleTitle: "CFP®",
     exampleCompany: "Petrova Wealth Advisors",
+    exampleEmail: "elena@petrovawealth.com",
+    accent: "#a86b2c",
     needs: [
       "Your license designations, like Series 7, Series 66, or CFP®, since clients and compliance teams both look for these credentials on official correspondence.",
       "A firm disclosure line if your broker-dealer or RIA requires one — many compliance departments mandate specific wording that must appear on every outbound email.",

@@ -22,8 +22,12 @@ function persistDraft(patch: Partial<SignatureDocument>) {
 }
 
 export function LandingPage({ profession }: { profession?: Profession }) {
-  const [name, setName] = useState("Sarah Chen");
-  const [accent, setAccent] = useState("#4f46e5");
+  const [name, setName] = useState(profession?.exampleName ?? "Sarah Chen");
+  const [accent, setAccent] = useState(profession?.accent ?? "#4f46e5");
+
+  const persona = profession
+    ? { title: profession.exampleTitle, company: profession.exampleCompany, email: profession.exampleEmail }
+    : undefined;
 
   const handleNameChange = (value: string) => {
     setName(value);
@@ -51,8 +55,18 @@ export function LandingPage({ profession }: { profession?: Profession }) {
         eyebrow={profession ? `The 30-second signature for ${profession.plural}` : undefined}
         headline={profession?.headline}
         subtitle={profession?.subtitle}
+        title={persona?.title}
+        company={persona?.company}
+        email={persona?.email}
       />
-      <Templates name={name} accent={accent} onSelectTemplate={handleSelectTemplate} />
+      <Templates
+        name={name}
+        accent={accent}
+        onSelectTemplate={handleSelectTemplate}
+        title={persona?.title}
+        company={persona?.company}
+        email={persona?.email}
+      />
       {profession ? <ProfessionSections profession={profession} /> : null}
       <HowItWorks />
       <Pricing />

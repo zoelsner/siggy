@@ -163,11 +163,17 @@ const templates: { id: TemplateId; name: string; desc: string; Preview: (props: 
 export function Templates({
   name,
   accent,
-  onSelectTemplate
+  onSelectTemplate,
+  title,
+  company,
+  email
 }: {
   name: string;
   accent: string;
   onSelectTemplate: (id: TemplateId) => void;
+  title?: string;
+  company?: string;
+  email?: string;
 }) {
   return (
     <section className="templates-section" id="templates">
@@ -184,7 +190,7 @@ export function Templates({
             key={t.id}
             onClick={() => onSelectTemplate(t.id)}
           >
-            <t.Preview name={name || "Your Name"} accent={accent} />
+            <t.Preview name={name || "Your Name"} accent={accent} title={title} company={company} email={email} />
             <div className="template-card__label">
               <span className="template-card__name">{t.name}</span>
               <span className="template-card__desc">{t.desc}</span>
