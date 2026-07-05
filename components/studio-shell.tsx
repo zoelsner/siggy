@@ -46,15 +46,49 @@ const PREVIEW_PROFILES: Array<{ id: ClientProfileId; label: string }> = [
   { id: "apple_mail", label: "Apple Mail" },
 ];
 
-function TemplateThumb({ id }: { id: TemplateId }) {
+// Miniature of each template's actual layout, tinted with the live accent.
+function TemplateThumb({ id, accent }: { id: TemplateId; accent: string }) {
   return (
-    <div className={`template-thumb template-thumb--${id}`} aria-hidden="true">
-      <span className="template-thumb__mark" />
-      <span className="template-thumb__lines">
-        <span />
-        <span />
-        <span />
-      </span>
+    <div
+      className={`template-thumb template-thumb--${id}`}
+      style={{ ["--thumb-accent" as string]: accent }}
+      aria-hidden="true"
+    >
+      {id === "bold" ? (
+        <span className="template-thumb__col">
+          <span className="template-thumb__bar template-thumb__bar--xl template-thumb__bar--dark" style={{ width: "58%" }} />
+          <span className="template-thumb__bar template-thumb__bar--xl template-thumb__bar--accent" style={{ width: "42%" }} />
+          <span className="template-thumb__rule" style={{ width: "68%" }} />
+          <span className="template-thumb__bar template-thumb__bar--sm template-thumb__bar--gray" style={{ width: "50%" }} />
+        </span>
+      ) : null}
+      {id === "edge" ? (
+        <span className="template-thumb__col">
+          <span className="template-thumb__underline" style={{ width: "56%" }}>
+            <span className="template-thumb__bar template-thumb__bar--lg template-thumb__bar--dark" />
+            <span className="template-thumb__highlight" />
+          </span>
+          <span className="template-thumb__bar template-thumb__bar--sm template-thumb__bar--gray" style={{ width: "64%" }} />
+          <span className="template-thumb__bar template-thumb__bar--sm template-thumb__bar--faint" style={{ width: "42%" }} />
+        </span>
+      ) : null}
+      {id === "card" ? (
+        <>
+          <span className="template-thumb__avatar" />
+          <span className="template-thumb__col">
+            <span className="template-thumb__bar template-thumb__bar--lg template-thumb__bar--accent" style={{ width: "72%" }} />
+            <span className="template-thumb__bar template-thumb__bar--sm template-thumb__bar--gray" style={{ width: "88%" }} />
+            <span className="template-thumb__bar template-thumb__bar--sm template-thumb__bar--faint" style={{ width: "58%" }} />
+          </span>
+        </>
+      ) : null}
+      {id === "clean" ? (
+        <span className="template-thumb__col template-thumb__col--airy">
+          <span className="template-thumb__bar template-thumb__bar--lg template-thumb__bar--accent" style={{ width: "46%" }} />
+          <span className="template-thumb__bar template-thumb__bar--sm template-thumb__bar--gray" style={{ width: "66%" }} />
+          <span className="template-thumb__bar template-thumb__bar--sm template-thumb__bar--faint" style={{ width: "40%" }} />
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -117,7 +151,7 @@ export function StudioShell() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             document: deferredDocument,
-            profileId: "gmail_web",
+            profileId: deferredDocument.targetProfileId,
             token
           }),
           signal: controller.signal
@@ -259,6 +293,9 @@ export function StudioShell() {
     }
   }
 
+  const activeProfileLabel =
+    PREVIEW_PROFILES.find((profile) => profile.id === document.targetProfileId)?.label ?? "Gmail";
+
   return (
     <main className="page-shell page-shell--builder">
       <div className="topbar">
@@ -344,7 +381,7 @@ export function StudioShell() {
                   title={`${TEMPLATE_PILL_LABELS[id]} — ${template.description}`}
                   type="button"
                 >
-                  <TemplateThumb id={id} />
+                  <TemplateThumb id={id} accent={document.accentColor} />
                   <span>{TEMPLATE_PILL_LABELS[id]}</span>
                 </button>
               );
@@ -393,6 +430,32 @@ export function StudioShell() {
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="preview-status" aria-live="polite">
+            {renderResult ? (
+              renderResult.warnings.length === 0 ? (
+                <span className="preview-status__item preview-status__item--ok">
+                  ✓ Fits {activeProfileLabel} · {renderResult.sizeBudget.charCount.toLocaleString()} chars
+                  {renderResult.sizeBudget.status !== "ok"
+                    ? ` of ${renderResult.sizeBudget.softLimit.toLocaleString()}`
+                    : ""}
+                </span>
+              ) : (
+                renderResult.warnings.map((warning) => (
+                  <span
+                    className={`preview-status__item preview-status__item--${warning.severity}`}
+                    key={warning.code}
+                  >
+                    {warning.message}
+                  </span>
+                ))
+              )
+            ) : (
+              <span className="preview-status__item preview-status__item--muted">
+                Checking {activeProfileLabel} compatibility…
+              </span>
+            )}
           </div>
 
           <div className="message-canvas">
