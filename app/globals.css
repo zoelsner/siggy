@@ -2278,6 +2278,17 @@ select {
   background: var(--bg-elevated);
 }
 
+.hero-mini-field__input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+}
+
 .hero-mini-field__caret {
   display: inline-block;
   width: 1.5px;
@@ -2302,6 +2313,9 @@ select {
   width: 20px;
   height: 20px;
   border-radius: 5px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 .hero-mini-editor__swatch--active {
@@ -2327,17 +2341,10 @@ select {
 }
 
 .hero-mini-sig__avatar {
-  width: 72px;
-  height: 72px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: var(--text);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: "Fraunces", Georgia, serif;
-  font-style: italic;
-  font-size: 30px;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
@@ -2353,10 +2360,6 @@ select {
   letter-spacing: -0.02em;
   line-height: 1.05;
   color: var(--text);
-}
-
-.hero-mini-sig__name span {
-  color: var(--accent);
 }
 
 .hero-mini-sig__title {
@@ -2432,31 +2435,6 @@ select {
   margin: 8px 0 0;
 }
 
-.templates-section__input {
-  margin-top: 28px;
-  width: 320px;
-  text-align: center;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 20px;
-  background: var(--bg-elevated);
-  color: var(--text);
-  font-size: 18px;
-  font-weight: 600;
-  font-family: inherit;
-  transition: border-color 150ms ease;
-}
-
-.templates-section__input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.templates-section__input::placeholder {
-  color: var(--text-soft);
-  font-weight: 400;
-}
-
 .templates-grid {
   display: flex;
   gap: 16px;
@@ -2474,6 +2452,22 @@ select {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease;
+}
+
+.template-card:hover,
+.template-card:focus-visible {
+  border-color: var(--border-strong);
+}
+
+.template-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .template-card__label {
@@ -2712,26 +2706,21 @@ select {
 }
 
 .tpl-card__photo {
-  width: 60px;
+  width: 96px;
   background: #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding: 12px 0;
+  padding: 15px 0;
 }
 
-.tpl-card__avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: white;
+.tpl-card__avatar-img {
+  width: 66px;
+  height: 66px;
+  border-radius: 12px;
+  object-fit: cover;
+  display: block;
 }
 
 .tpl-card__details {
@@ -2872,80 +2861,142 @@ select {
 /* Pricing */
 
 .pricing-section {
-  padding: 48px 0 64px;
-  display: flex;
-  justify-content: center;
+  padding: 64px 0 64px;
+  border-top: 1px solid var(--border);
+  margin-top: 44px;
 }
 
-.pricing-card {
-  width: 100%;
-  max-width: 400px;
-  border-radius: 20px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  padding: 40px 36px;
-  box-shadow: var(--shadow);
-}
-
-.pricing-card__header {
+.pricing-header {
   text-align: center;
-  margin-bottom: 28px;
+  margin: 0 auto 52px;
+  max-width: 520px;
 }
 
-.pricing-card__label {
+.pricing-header__eyebrow {
   font-family: "Geist Mono", "SF Mono", Consolas, monospace;
   font-size: 11px;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--accent);
-  font-weight: 600;
 }
 
-.pricing-card__price {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.pricing-card__amount {
-  font-size: 48px;
+.pricing-header__headline {
+  font-size: 44px;
   font-weight: 800;
   letter-spacing: -0.03em;
+  margin: 12px 0 0;
 }
 
-.pricing-card__term {
-  font-size: 15px;
+.pricing-header__subtitle {
+  font-size: 16px;
   color: var(--text-dim);
+  margin: 12px auto 0;
 }
 
-.pricing-card__features {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 32px;
+.pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.pricing-receipt-col {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.pricing-receipt {
+  width: 100%;
+  background: var(--bg-elevated);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  padding: 26px 28px 22px;
+}
+
+.pricing-receipt__brand {
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.pricing-receipt__lifetime {
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+  font-size: 10.5px;
+  color: #c9c3bb;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.pricing-receipt__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.pricing-receipt__line {
+  display: flex;
+  align-items: baseline;
   gap: 10px;
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+  font-size: 12.5px;
+  color: var(--text);
 }
 
-.pricing-card__features li {
-  font-size: 14px;
-  color: var(--text-dim);
-  padding-left: 24px;
-  position: relative;
-}
-
-.pricing-card__features li::before {
-  content: "\2713";
-  position: absolute;
-  left: 0;
-  color: var(--accent);
+.pricing-receipt__line--strong {
+  font-size: 14.5px;
   font-weight: 700;
 }
 
-.pricing-card__cta {
+.pricing-receipt__line--dim {
+  color: var(--text-soft);
+}
+
+.pricing-receipt__spacer {
+  flex: 1;
+  border-bottom: 1.5px dotted rgba(20, 20, 20, 0.22);
+  transform: translateY(-3px);
+}
+
+.pricing-receipt__strike {
+  text-decoration: line-through;
+  white-space: nowrap;
+}
+
+.pricing-receipt__line span:last-child {
+  white-space: nowrap;
+}
+
+.pricing-receipt__divider {
+  border-top: 1.5px dashed rgba(20, 20, 20, 0.2);
+  margin: 16px 0 12px;
+}
+
+.pricing-receipt__footer {
+  margin-top: 16px;
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+  font-size: 10.5px;
+  color: #c9c3bb;
+  text-align: center;
+}
+
+.pricing-receipt-col__cta {
   width: 100%;
+  margin-top: 24px;
+}
+
+.pricing-receipt-col__caption {
+  margin-top: 14px;
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-soft);
+  text-align: center;
 }
 
 .pricing-card__error {
@@ -2959,6 +3010,73 @@ select {
 .pricing-card__error a {
   color: inherit;
   text-decoration: underline;
+}
+
+.pricing-stack-col {
+  position: relative;
+  height: 560px;
+}
+
+.pricing-stack__eyebrow {
+  position: absolute;
+  top: -14px;
+  left: 8px;
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-soft);
+}
+
+.pricing-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.pricing-stack__card {
+  position: absolute;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 24px;
+  box-shadow: 0 2px 8px rgba(38, 29, 20, 0.04);
+}
+
+.pricing-stack__label {
+  display: block;
+  font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c9c3bb;
+  margin-bottom: 10px;
+}
+
+.pricing-stack__card--bold {
+  width: 470px;
+  left: 40px;
+  top: 14px;
+  transform: rotate(-2deg);
+  z-index: 1;
+}
+
+.pricing-stack__card--underline {
+  width: 420px;
+  left: 110px;
+  top: 199px;
+  transform: rotate(1.5deg);
+  z-index: 1;
+}
+
+.pricing-stack__card--card {
+  width: 545px;
+  left: 0;
+  top: 374px;
+  transform: rotate(-1deg);
+  z-index: 2;
+  box-shadow: var(--shadow);
 }
 
 /* Landing footer */
@@ -3110,6 +3228,29 @@ select {
   .templates-section__headline {
     font-size: 28px;
   }
+
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricing-stack-col {
+    height: auto;
+    padding-top: 28px;
+  }
+
+  .pricing-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .pricing-stack__card {
+    position: static;
+    width: 100%;
+    left: auto;
+    top: auto;
+    transform: none;
+  }
 }
 
 @media (max-width: 500px) {
@@ -3202,10 +3343,6 @@ select {
   .templates-grid .template-card {
     flex: 0 0 100%;
   }
-
-  .templates-section__input {
-    width: 100%;
-  }
 }
 
 /* ━━━ Unlock / Pro gating ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -3281,9 +3418,3 @@ select {
   background: #e0e7ff;
 }
 
-.pricing-card__note {
-  margin-top: 14px;
-  font-size: 13px;
-  color: var(--text-dim);
-  line-height: 1.5;
-}

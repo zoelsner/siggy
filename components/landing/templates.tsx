@@ -1,44 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import type React from "react";
 
 import { splitName } from "@/lib/templates";
+import type { TemplateId } from "@/lib/types";
 
-const accent = "#4f46e5";
-const dark = "#0f172a";
-const mid = "#475569";
-const light = "#94a3b8";
-const rule = "#e2e8f0";
+const DEFAULT_PERSONA = {
+  title: "Head of Design",
+  company: "Meridian Studio",
+  email: "sarah@meridian.design",
+  phone: "+1 (415) 555-0142",
+  site: "meridian.design"
+};
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
+type PreviewProps = {
+  name: string;
+  accent: string;
+  title?: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  site?: string;
+};
 
-function UnderlinePreview({ name }: { name: string }) {
+export function UnderlinePreview({
+  name,
+  accent,
+  title = DEFAULT_PERSONA.title,
+  company = DEFAULT_PERSONA.company,
+  email = DEFAULT_PERSONA.email,
+  phone = DEFAULT_PERSONA.phone,
+  site = DEFAULT_PERSONA.site
+}: PreviewProps) {
   const { first, last } = splitName(name);
   return (
     <div className="tpl-preview tpl-preview--edge">
       <div className="tpl-edge__name-wrap">
         <div className="tpl-edge__name">
           <span>{first}</span>
-          {last ? <span className="tpl-edge__last">{last}</span> : null}
+          {last ? <span className="tpl-edge__last" style={{ color: accent }}>{last}</span> : null}
         </div>
-        <div className="tpl-edge__highlight" />
+        <div className="tpl-edge__highlight" style={{ background: accent }} />
       </div>
-      <div className="tpl-edge__title"><strong>HEAD OF DESIGN</strong><span>&middot;</span>Meridian Studio</div>
+      <div className="tpl-edge__title"><strong>{title.toUpperCase()}</strong><span>&middot;</span>{company}</div>
       <div className="tpl-edge__rule" />
       <div className="tpl-edge__footer">
         <div className="tpl-edge__contact">
-          <span className="tpl-edge__link">sarah@meridian.design</span>
-          <span>+1 (415) 555-0142</span>
-          <span>meridian.design</span>
+          <span className="tpl-edge__link" style={{ color: accent }}>{email}</span>
+          <span>{phone}</span>
+          <span>{site}</span>
         </div>
-        <div className="tpl-edge__socials">
+        <div className="tpl-edge__socials" style={{ color: accent }}>
           <span>LinkedIn</span>
           <span className="tpl-edge__dot">&middot;</span>
           <span>X</span>
@@ -48,20 +60,28 @@ function UnderlinePreview({ name }: { name: string }) {
   );
 }
 
-function BoldPreview({ name }: { name: string }) {
+export function BoldPreview({
+  name,
+  accent,
+  title = DEFAULT_PERSONA.title,
+  company = DEFAULT_PERSONA.company,
+  email = DEFAULT_PERSONA.email,
+  phone = DEFAULT_PERSONA.phone,
+  site = DEFAULT_PERSONA.site
+}: PreviewProps) {
   const { first, last } = splitName(name);
   return (
     <div className="tpl-preview tpl-preview--bold">
       <div className="tpl-bold__name">
         <span className="tpl-bold__first">{first}</span>
-        {last && <span className="tpl-bold__last">{last}</span>}
+        {last && <span className="tpl-bold__last" style={{ color: accent }}>{last}</span>}
       </div>
-      <div className="tpl-bold__rule" />
+      <div className="tpl-bold__rule" style={{ background: accent }} />
       <div className="tpl-bold__columns">
         <div className="tpl-bold__left">
-          <span className="tpl-bold__job">Head of Design</span>
-          <span className="tpl-bold__company">Meridian Studio</span>
-          <div className="tpl-bold__socials">
+          <span className="tpl-bold__job">{title}</span>
+          {company ? <span className="tpl-bold__company">{company}</span> : null}
+          <div className="tpl-bold__socials" style={{ color: accent }}>
             <span>LinkedIn</span>
             <span className="tpl-bold__dot">&middot;</span>
             <span>X</span>
@@ -69,47 +89,60 @@ function BoldPreview({ name }: { name: string }) {
         </div>
         <div className="tpl-bold__divider" />
         <div className="tpl-bold__right">
-          <span>+1 (415) 555-0142</span>
-          <span className="tpl-bold__link">sarah@meridian.design</span>
-          <span className="tpl-bold__link">meridian.design</span>
+          <span>{phone}</span>
+          <span className="tpl-bold__link" style={{ color: accent }}>{email}</span>
+          <span className="tpl-bold__link" style={{ color: accent }}>{site}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function CardPreview({ name }: { name: string }) {
+export function CardPreview({
+  name,
+  accent,
+  title = DEFAULT_PERSONA.title,
+  company = "Meridian",
+  email = DEFAULT_PERSONA.email,
+  site = DEFAULT_PERSONA.site,
+  img = "/sarah-avatar.png"
+}: PreviewProps & { img?: string }) {
   return (
     <div className="tpl-preview tpl-preview--card">
       <div className="tpl-card__frame">
         <div className="tpl-card__photo">
-          <div className="tpl-card__avatar">
-            <span>{getInitials(name)}</span>
-          </div>
+          <img className="tpl-card__avatar-img" src={img} alt="" width={66} height={66} />
         </div>
         <div className="tpl-card__details">
           <div className="tpl-card__name">{name}</div>
-          <div className="tpl-card__title">Head of Design &middot; Meridian</div>
+          <div className="tpl-card__title">{title} &middot; {company}</div>
           <div className="tpl-card__rule" />
-          <span className="tpl-card__link">sarah@meridian.design</span>
-          <span className="tpl-card__text">meridian.design</span>
+          <span className="tpl-card__link" style={{ color: accent }}>{email}</span>
+          <span className="tpl-card__text">{site}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function CleanPreview({ name }: { name: string }) {
+function CleanPreview({
+  name,
+  accent,
+  title = DEFAULT_PERSONA.title,
+  company = DEFAULT_PERSONA.company,
+  email = DEFAULT_PERSONA.email,
+  phone = DEFAULT_PERSONA.phone
+}: PreviewProps) {
   return (
     <div className="tpl-preview tpl-preview--clean">
       <div className="tpl-clean__name">{name}</div>
-      <div className="tpl-clean__title">Head of Design, Meridian Studio</div>
+      <div className="tpl-clean__title">{title}, {company}</div>
       <div className="tpl-clean__contact">
-        <span>sarah@meridian.design</span>
+        <span>{email}</span>
         <span className="tpl-clean__dot">&middot;</span>
-        <span>+1 (415) 555-0142</span>
+        <span>{phone}</span>
       </div>
-      <div className="tpl-clean__socials">
+      <div className="tpl-clean__socials" style={{ color: accent }}>
         <span>LinkedIn</span>
         <span className="tpl-clean__dot">&middot;</span>
         <span>X</span>
@@ -120,37 +153,43 @@ function CleanPreview({ name }: { name: string }) {
   );
 }
 
-const templates = [
+const templates: { id: TemplateId; name: string; desc: string; Preview: (props: PreviewProps) => React.ReactElement }[] = [
   { id: "bold", name: "Bold", desc: "Massive split-color name as hero", Preview: BoldPreview },
   { id: "edge", name: "Underline", desc: "Soft highlight underline + compact contacts", Preview: UnderlinePreview },
   { id: "card", name: "Card", desc: "Visual anchor with a tinted headshot panel", Preview: CardPreview },
-  { id: "clean", name: "Minimal", desc: "Pure text, accent name, zero chrome", Preview: CleanPreview },
+  { id: "clean", name: "Minimal", desc: "Pure text, accent name, zero chrome", Preview: CleanPreview }
 ];
 
-export function Templates() {
-  const [name, setName] = useState("Sarah Chen");
-
+export function Templates({
+  name,
+  accent,
+  onSelectTemplate
+}: {
+  name: string;
+  accent: string;
+  onSelectTemplate: (id: TemplateId) => void;
+}) {
   return (
     <section className="templates-section" id="templates">
       <span className="templates-section__eyebrow">Templates</span>
       <h2 className="templates-section__headline">Four styles. Zero compromises.</h2>
-      <p className="templates-section__subtitle">Type your name and see it in every template.</p>
-      <input
-        className="templates-section__input"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Your name"
-        type="text"
-      />
+      <p className="templates-section__subtitle">
+        The name you typed above, in every template — headshot included.
+      </p>
       <div className="templates-grid">
         {templates.map((t) => (
-          <div className="template-card" key={t.id}>
-            <t.Preview name={name || "Your Name"} />
+          <button
+            type="button"
+            className="template-card"
+            key={t.id}
+            onClick={() => onSelectTemplate(t.id)}
+          >
+            <t.Preview name={name || "Your Name"} accent={accent} />
             <div className="template-card__label">
               <span className="template-card__name">{t.name}</span>
               <span className="template-card__desc">{t.desc}</span>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </section>

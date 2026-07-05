@@ -2,10 +2,21 @@
 
 import { trackEvent } from "@/lib/analytics";
 import { useAccess } from "@/lib/billing";
+import { splitName } from "@/lib/templates";
 
 const PALETTE = ["#1d1b19", "#4f46e5", "#c9583d", "#2f6a52", "#a86b2c", "#5a4ba0"];
 
-export function Hero() {
+export function Hero({
+  name,
+  accent,
+  onNameChange,
+  onAccentChange
+}: {
+  name: string;
+  accent: string;
+  onNameChange: (value: string) => void;
+  onAccentChange: (color: string) => void;
+}) {
   const { unlocked, resolved, startCheckout } = useAccess();
 
   return (
@@ -56,7 +67,7 @@ export function Hero() {
         </dl>
       </div>
 
-      <div className="hero__right" aria-hidden="true">
+      <div className="hero__right">
         <div className="hero-card-stack">
           <div className="hero-card-stack__back" />
           <div className="hero-card-stack__front">
@@ -64,27 +75,30 @@ export function Hero() {
               <span className="hero-mini-chrome__dot hero-mini-chrome__dot--r" />
               <span className="hero-mini-chrome__dot hero-mini-chrome__dot--y" />
               <span className="hero-mini-chrome__dot hero-mini-chrome__dot--g" />
-              <span className="hero-mini-chrome__url">siggy.email/new</span>
+              <span className="hero-mini-chrome__url">trysiggy.com/editor</span>
             </div>
             <div className="hero-mini-editor">
               <div className="hero-mini-editor__rail">
                 <span className="hero-mini-editor__eyebrow">Your details</span>
-                <HeroMiniField label="Name" value="Sarah Chen" focused />
+                <HeroMiniField label="Name" value={name} onChange={onNameChange} focused />
                 <HeroMiniField label="Title" value="Head of Design" />
                 <HeroMiniField label="Email" value="sarah@meridian.design" />
                 <span className="hero-mini-editor__eyebrow hero-mini-editor__eyebrow--mt">Color</span>
                 <div className="hero-mini-editor__swatches">
-                  {PALETTE.map((c, i) => (
-                    <span
+                  {PALETTE.map((c) => (
+                    <button
                       key={c}
-                      className={`hero-mini-editor__swatch${i === 1 ? " hero-mini-editor__swatch--active" : ""}`}
+                      type="button"
+                      className={`hero-mini-editor__swatch${c === accent ? " hero-mini-editor__swatch--active" : ""}`}
                       style={{ background: c }}
+                      aria-label={`Accent color ${c}`}
+                      onClick={() => onAccentChange(c)}
                     />
                   ))}
                 </div>
               </div>
               <div className="hero-mini-editor__preview">
-                <HeroMiniSignature />
+                <HeroMiniSignature name={name} accent={accent} />
               </div>
             </div>
             <div className="hero-mini-footer">
@@ -99,29 +113,55 @@ export function Hero() {
   );
 }
 
-function HeroMiniField({ label, value, focused = false }: { label: string; value: string; focused?: boolean }) {
+function HeroMiniField({
+  label,
+  value,
+  focused = false,
+  onChange
+}: {
+  label: string;
+  value: string;
+  focused?: boolean;
+  onChange?: (value: string) => void;
+}) {
   return (
     <div className="hero-mini-field">
       <span className="hero-mini-field__label">{label}</span>
       <div className={`hero-mini-field__box${focused ? " hero-mini-field__box--focused" : ""}`}>
-        {value}
-        {focused && <span className="hero-mini-field__caret" aria-hidden="true" />}
+        {onChange ? (
+          <input
+            className="hero-mini-field__input"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            aria-label={label}
+            type="text"
+          />
+        ) : (
+          value
+        )}
       </div>
     </div>
   );
 }
 
-function HeroMiniSignature() {
+function HeroMiniSignature({ name, accent }: { name: string; accent: string }) {
+  const { first, last } = splitName(name);
   return (
     <div className="hero-mini-sig">
-      <div className="hero-mini-sig__avatar">SC</div>
+      <img className="hero-mini-sig__avatar" src="/sarah-avatar.png" alt="" width={52} height={52} />
       <div className="hero-mini-sig__body">
         <div className="hero-mini-sig__name">
-          Sarah <span>Chen</span>
+          {first}
+          {last ? (
+            <>
+              {" "}
+              <span style={{ color: accent }}>{last}</span>
+            </>
+          ) : null}
         </div>
         <div className="hero-mini-sig__title">Head of Design · Meridian Studio</div>
         <div className="hero-mini-sig__contact">
-          <span>sarah@meridian.design</span>
+          <span style={{ color: accent }}>sarah@meridian.design</span>
           <span className="hero-mini-sig__sep">|</span>
           <span>+1 (415) 555-0142</span>
         </div>
