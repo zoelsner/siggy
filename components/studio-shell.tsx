@@ -13,7 +13,7 @@ import { useAccess } from "@/lib/billing";
 import { GATES } from "@/lib/billing/gates";
 import { createDefaultDocument } from "@/lib/default-document";
 import { touchDocument } from "@/lib/document";
-import { DEFAULT_FREE_FONT, fontFamilyMap, fontOptions, isSystemFont } from "@/lib/fonts";
+import { DEFAULT_FREE_FONT, fontFamilyMap, fontOptions, getNameImageWeight, isSystemFont } from "@/lib/fonts";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
 import { SUPPORT_EMAIL } from "@/lib/site";
 import { templateDefinitions } from "@/lib/templates";
@@ -218,7 +218,7 @@ export function StudioShell() {
             name: document.fullName,
             fontFamily: document.fontFamily,
             accentColor: document.accentColor,
-            weight: 700,
+            weight: getNameImageWeight(document.fontFamily),
             token,
           }),
         });
@@ -242,7 +242,7 @@ export function StudioShell() {
 
       const result = (await renderRes.json()) as RenderResult;
       const htmlBlob = new Blob([result.html], { type: "text/html" });
-      const textBlob = new Blob([result.html], { type: "text/plain" });
+      const textBlob = new Blob([result.plainText], { type: "text/plain" });
       await navigator.clipboard.write([
         new ClipboardItem({ "text/html": htmlBlob, "text/plain": textBlob }),
       ]);
