@@ -150,7 +150,7 @@ function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
     );
 
   return (
-    <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark, width: "100%" }}>
+    <table role="presentation" width={520} cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark, width: "520px" }}>
       <tbody>
         <tr>
           <td colSpan={2} style={{ paddingBottom: "4px" }}>

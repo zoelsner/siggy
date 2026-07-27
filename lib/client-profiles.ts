@@ -48,7 +48,13 @@ function createSharedWarnings(html: string, document: SignatureDocument): Render
 }
 
 function normalizeHtml(html: string): string {
-  return html.replace(/\n+/g, "").replace(/>\s+</g, "><").trim();
+  return html
+    // React 19's renderToStaticMarkup hoists a <link rel="preload"> above the
+    // markup for every <img>; none of it belongs in signature HTML.
+    .replace(/<link\b[^>]*>/gi, "")
+    .replace(/\n+/g, "")
+    .replace(/>\s+</g, "><")
+    .trim();
 }
 
 export const clientProfiles: Record<ClientProfileId, ClientProfile> = {

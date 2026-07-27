@@ -43,12 +43,16 @@ test.describe("editor", () => {
     await openFreshEditor(page);
     await page.getByRole("tab", { name: "Underline" }).click();
 
-    await page.getByLabel("Full name").fill("Alex Morgan");
-    await page.getByLabel("Title").fill("Design Lead");
-    await page.getByLabel("Company").fill("Northstar Labs");
-    await page.getByLabel("Email").fill("alex@northstar.test");
-    await page.getByLabel("Phone").fill("+1 (212) 555-0199");
-    await page.getByLabel("Website").fill("northstar.test");
+    // Scope to the inspector panel — the preview's inline editor has fields
+    // (and "Remove Phone"-style buttons) whose accessible names collide with
+    // these labels under Playwright's substring matching.
+    const inspector = page.locator(".inspector-panel");
+    await inspector.getByLabel("Full name").fill("Alex Morgan");
+    await inspector.getByLabel("Title").fill("Design Lead");
+    await inspector.getByLabel("Company").fill("Northstar Labs");
+    await inspector.getByLabel("Email").fill("alex@northstar.test");
+    await inspector.getByLabel("Phone").fill("+1 (212) 555-0199");
+    await inspector.getByLabel("Website").fill("northstar.test");
 
     const signature = page.locator(".message-card__signature");
     await expect(signature.locator("#sig-name-first")).toHaveValue("Alex");

@@ -3,6 +3,9 @@ export interface FontOption {
   name: string;
   google?: string;
   system?: boolean;
+  // Weight to request for name-image rendering. Some Google fonts ship a
+  // single 400 weight and the css2 API 400s on any other value.
+  nameWeight?: number;
 }
 
 export const fontOptions: FontOption[] = [
@@ -14,8 +17,8 @@ export const fontOptions: FontOption[] = [
   { id: "dm-sans", name: "DM Sans", google: "DM+Sans" },
   { id: "fraunces", name: "Fraunces", google: "Fraunces" },
   { id: "outfit", name: "Outfit", google: "Outfit" },
-  { id: "anton", name: "Anton", google: "Anton" },
-  { id: "instrument-serif", name: "Instrument Serif", google: "Instrument+Serif" },
+  { id: "anton", name: "Anton", google: "Anton", nameWeight: 400 },
+  { id: "instrument-serif", name: "Instrument Serif", google: "Instrument+Serif", nameWeight: 400 },
   { id: "libre-baskerville", name: "Libre Baskerville", google: "Libre+Baskerville" },
   { id: "playfair", name: "Playfair Display", google: "Playfair+Display" },
   { id: "bricolage", name: "Bricolage Grotesque", google: "Bricolage+Grotesque" },
@@ -33,6 +36,10 @@ export function isSystemFont(id: string): boolean {
 
 // What free-tier renders fall back to when a document carries a pro font.
 export const DEFAULT_FREE_FONT = "georgia";
+
+export function getNameImageWeight(id: string): number {
+  return getFontOption(id).nameWeight ?? 700;
+}
 
 export const fontFamilyMap: Record<string, string> = {
   "georgia": "Georgia, 'Times New Roman', serif",
@@ -70,18 +77,24 @@ export async function fetchFontData(
   }
 
   // Fetch Google Fonts CSS with non-browser user-agent to get TTF URL
-  const cssUrl = `https://fonts.googleapis.com/css2?family=${font.google}:wght@${weight}&text=${encodeURIComponent(text)}`;
-  const cssResponse = await fetch(cssUrl, {
-    headers: { "User-Agent": "Mozilla/4.0" }, // non-modern UA → returns TTF
-  });
-  const css = await cssResponse.text();
+  async function fetchTtfUrl(wght: number): Promise<string | null> {
+    const cssUrl = `https://fonts.googleapis.com/css2?family=${font.google}:wght@${wght}&text=${encodeURIComponent(text)}`;
+    const cssResponse = await fetch(cssUrl, {
+      headers: { "User-Agent": "Mozilla/4.0" }, // non-modern UA → returns TTF
+    });
+    if (!cssResponse.ok) return null;
+    const css = await cssResponse.text();
+    return css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/)?.[1] ?? null;
+  }
 
-  const match = css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/);
-  if (!match) {
+  // Single-weight fonts 400 on any other requested weight — retry at 400
+  // rather than silently losing the font on copy.
+  const ttfUrl = (await fetchTtfUrl(weight)) ?? (weight !== 400 ? await fetchTtfUrl(400) : null);
+  if (!ttfUrl) {
     throw new Error(`Could not extract font URL for ${font.name}`);
   }
 
-  const fontResponse = await fetch(match[1]);
+  const fontResponse = await fetch(ttfUrl);
   if (!fontResponse.ok) {
     throw new Error(`Failed to fetch font file for ${font.name}`);
   }
