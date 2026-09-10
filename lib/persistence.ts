@@ -10,12 +10,9 @@ export function createBrowserDraftAdapter(): PersistenceAdapter {
         return null;
       }
 
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        return null;
-      }
-
       try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
         return coerceSignatureDocument(JSON.parse(raw));
       } catch {
         return null;
@@ -23,17 +20,27 @@ export function createBrowserDraftAdapter(): PersistenceAdapter {
     },
     save(document: SignatureDocument) {
       if (typeof window === "undefined") {
-        return;
+        return false;
       }
 
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(document));
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(document));
+        return true;
+      } catch {
+        return false;
+      }
     },
     clear() {
       if (typeof window === "undefined") {
-        return;
+        return false;
       }
 
-      window.localStorage.removeItem(STORAGE_KEY);
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+        return true;
+      } catch {
+        return false;
+      }
     }
   };
 }

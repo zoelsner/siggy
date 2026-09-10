@@ -1,4 +1,4 @@
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, SUPPORT_EMAIL } from "@/lib/site";
 
 export type AccessEmailKind = "receipt" | "restore";
 
@@ -55,6 +55,7 @@ export async function sendAccessEmail({
     },
     body: JSON.stringify({
       from: "Siggy <access@trysiggy.com>",
+      reply_to: SUPPORT_EMAIL,
       to,
       subject,
       html,

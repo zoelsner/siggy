@@ -58,6 +58,7 @@ export const fontFamilyMap: Record<string, string> = {
 
 // Module-level cache for font buffers
 const fontCache = new Map<string, ArrayBuffer>();
+const MAX_CACHED_FONT_SUBSETS = 64;
 
 export async function fetchFontData(
   fontId: string,
@@ -70,7 +71,10 @@ export async function fetchFontData(
     throw new Error(`System font "${font.name}" does not need rendering`);
   }
 
-  const cacheKey = `${fontId}:${weight}`;
+  // Google Fonts returns only the requested glyphs. Never reuse a subset
+  // for a different name unless it contains exactly the same characters.
+  const characters = Array.from(new Set(text)).sort().join("");
+  const cacheKey = `${fontId}:${weight}:${characters}`;
   const cached = fontCache.get(cacheKey);
   if (cached) {
     return { data: cached, name: font.name };
@@ -78,7 +82,7 @@ export async function fetchFontData(
 
   // Fetch Google Fonts CSS with non-browser user-agent to get TTF URL
   async function fetchTtfUrl(wght: number): Promise<string | null> {
-    const cssUrl = `https://fonts.googleapis.com/css2?family=${font.google}:wght@${wght}&text=${encodeURIComponent(text)}`;
+    const cssUrl = `https://fonts.googleapis.com/css2?family=${font.google}:wght@${wght}&text=${encodeURIComponent(characters)}`;
     const cssResponse = await fetch(cssUrl, {
       headers: { "User-Agent": "Mozilla/4.0" }, // non-modern UA → returns TTF
     });
@@ -100,6 +104,10 @@ export async function fetchFontData(
   }
 
   const data = await fontResponse.arrayBuffer();
+  if (fontCache.size >= MAX_CACHED_FONT_SUBSETS) {
+    const oldestKey = fontCache.keys().next().value;
+    if (oldestKey !== undefined) fontCache.delete(oldestKey);
+  }
   fontCache.set(cacheKey, data);
 
   return { data, name: font.name };

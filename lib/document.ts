@@ -85,12 +85,39 @@ export function resolveUrlForHtml(url: string, origin?: string): string {
   return `https://${url.replace(/^\/+/, "")}`;
 }
 
+// Accept the handle people naturally type into a platform-specific field,
+// while preserving complete profile URLs and existing saved drafts.
+export function resolveSocialUrlForHtml(platform: SocialPlatform, value: string): string {
+  const raw = value.trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return "";
+  if (/^(?:www\.)?(?:linkedin\.com|x\.com|twitter\.com|instagram\.com|github\.com)(?:\/|$)/i.test(raw)) {
+    return resolveUrlForHtml(raw);
+  }
+  if (platform === "linkedin" && /^(?:in|company)\//i.test(raw)) {
+    return `https://www.linkedin.com/${raw}`;
+  }
+  const handle = raw.replace(/^@/, "");
+  const isHandle = platform === "instagram" ? /^[a-z0-9_.]+$/i.test(handle) : /^[a-z0-9_-]+$/i.test(handle);
+  if (isHandle) {
+    const base: Record<SocialPlatform, string> = {
+      linkedin: "https://www.linkedin.com/in/",
+      x: "https://x.com/",
+      instagram: "https://www.instagram.com/",
+      github: "https://github.com/",
+    };
+    return `${base[platform]}${handle}`;
+  }
+  return resolveUrlForHtml(raw);
+}
+
 export function isLocalOrigin(origin?: string): boolean {
   return Boolean(origin && /localhost|127\.0\.0\.1/i.test(origin));
 }
 
 export function getFilledSocials(document: SignatureDocument): SocialLink[] {
-  return document.socials.filter((social) => social.url.trim().length > 0);
+  return document.socials.filter((social) => resolveSocialUrlForHtml(social.platform, social.url).length > 0);
 }
 
 function pickTemplate(value: unknown, fallback: TemplateId): TemplateId {

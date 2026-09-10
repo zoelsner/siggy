@@ -1,7 +1,9 @@
 import React from "react";
 
-import { getFilledSocials, resolveUrlForHtml } from "./document";
+import { getFilledSocials, resolveSocialUrlForHtml, resolveUrlForHtml } from "./document";
 import { fontFamilyMap } from "./fonts";
+import { getNamePresentation } from "./template-name";
+export { splitName } from "./template-name";
 import { SITE_URL } from "./site";
 import type { SignatureDocument, TemplateDefinition, TemplateId, TemplateRenderContext } from "./types";
 
@@ -41,7 +43,7 @@ function socials(doc: SignatureDocument, color: string) {
       {filled.map((s, i) => (
         <React.Fragment key={s.id}>
           {i > 0 ? <span style={{ color: light, margin: "0 6px" }}>·</span> : null}
-          <a href={resolveUrlForHtml(s.url)} style={{ color, textDecoration: "none" }}>{s.platform.toUpperCase()}</a>
+          <a href={resolveSocialUrlForHtml(s.platform, s.url)} style={{ color, textDecoration: "none" }}>{s.platform.toUpperCase()}</a>
         </React.Fragment>
       ))}
     </div>
@@ -60,7 +62,7 @@ function ctaButton(doc: SignatureDocument, accentColor: string) {
         fontWeight: 700,
         letterSpacing: "0.04em",
       }}>
-        <a href={doc.cta.url} style={{ color: "#ffffff", textDecoration: "none" }}>
+        <a href={resolveUrlForHtml(doc.cta.url)} style={{ color: "#ffffff", textDecoration: "none" }}>
           {doc.cta.text.toUpperCase()}
         </a>
       </td></tr></tbody>
@@ -81,7 +83,8 @@ function watermark() {
 // ━━━ UNDERLINE HIGHLIGHT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Split-color name with a soft accent underline and compact contact rows.
 function edge(doc: SignatureDocument, ctx: TemplateRenderContext) {
-  const { first, last } = splitName(doc.fullName);
+  const name = getNamePresentation("edge", doc.fullName, ctx.accentColor);
+  const { first, last } = name;
   const nameFontFamily = resolveNameFontFamily(doc.fontFamily);
   const socialBlock = socials(doc, ctx.accentColor);
 
@@ -94,9 +97,9 @@ function edge(doc: SignatureDocument, ctx: TemplateRenderContext) {
               <img alt={doc.fullName} src={ctx.nameImageUrl} width={ctx.nameImageWidth} height={ctx.nameImageHeight} style={{ display: "block" }} />
             ) : (
               <div style={{ display: "inline-block", ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
-                <div style={{ fontSize: "26px", fontWeight: 800, letterSpacing: "-0.06em", lineHeight: "1" }}>
-                  <span style={{ color: dark }}>{first}</span>
-                  {last ? <> <span style={{ color: ctx.accentColor }}>{last}</span></> : null}
+                <div style={{ fontSize: `${name.fontSize}px`, fontWeight: name.fontWeight, letterSpacing: name.letterSpacing, lineHeight: `${name.lineHeight}` }}>
+                  <span style={{ color: name.firstColor }}>{first}</span>
+                  {last ? <> <span style={{ color: name.lastColor }}>{last}</span></> : null}
                 </div>
                 <div style={{ height: "8px", backgroundColor: ctx.accentColor, opacity: 0.22, borderRadius: "2px", marginTop: "-6px", width: "100%" }} />
               </div>
@@ -135,17 +138,15 @@ function edge(doc: SignatureDocument, ctx: TemplateRenderContext) {
 // ━━━ BOLD ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Massive uppercase split-color name, full-width accent bar, split details
 function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
-  const parts = doc.fullName.split(" ");
-  const firstName = parts.slice(0, -1).join(" ") || parts[0];
-  const lastName = parts.length > 1 ? parts[parts.length - 1] : "";
+  const name = getNamePresentation("bold", doc.fullName, ctx.accentColor);
 
   const nameFontFamily = resolveNameFontFamily(doc.fontFamily);
   const nameElement = (ctx.nameImageUrl && ctx.nameImageWidth && ctx.nameImageHeight)
     ? <img alt={doc.fullName} src={ctx.nameImageUrl} width={ctx.nameImageWidth} height={ctx.nameImageHeight} style={{ display: "block" }} />
     : (
-      <div style={{ fontSize: "38px", fontWeight: 900, letterSpacing: "-0.06em", lineHeight: "0.84", ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
-        <span style={{ color: dark }}>{firstName.toUpperCase()}</span>
-        {lastName ? <><br /><span style={{ color: ctx.accentColor }}>{lastName.toUpperCase()}</span></> : null}
+      <div style={{ fontSize: `${name.fontSize}px`, fontWeight: name.fontWeight, letterSpacing: name.letterSpacing, lineHeight: `${name.lineHeight}`, ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
+        <span style={{ color: name.firstColor }}>{name.first}</span>
+        {name.last ? <><br /><span style={{ color: name.lastColor }}>{name.last}</span></> : null}
       </div>
     );
 
@@ -184,6 +185,7 @@ function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
 // ━━━ CARD ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Large tinted visual panel with an anchored photo and clean details.
 function card(doc: SignatureDocument, ctx: TemplateRenderContext) {
+  const name = getNamePresentation("card", doc.fullName, ctx.accentColor);
   return (
     <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark }}>
       <tbody>
@@ -192,7 +194,7 @@ function card(doc: SignatureDocument, ctx: TemplateRenderContext) {
             {photo(ctx.imageUrl, doc, 94, "14px")}
           </td>
           <td style={{ padding: "20px 0 20px 28px", verticalAlign: "top", minWidth: "360px" }}>
-            {nameImg(doc, ctx, { fontSize: "24px", fontWeight: 800, letterSpacing: "-0.02em", color: ctx.accentColor })}
+            {nameImg(doc, ctx, { fontSize: `${name.fontSize}px`, fontWeight: name.fontWeight, letterSpacing: name.letterSpacing, color: name.firstColor })}
             <div style={{ fontSize: "14px", color: dark, marginTop: "2px" }}>{doc.jobTitle} <span style={{ color: light }}>·</span> {doc.company}</div>
             <div style={{ height: "1px", background: rule, margin: "14px 0", width: "100%" }} />
             <div style={{ fontSize: "13px", color: dark, lineHeight: "20px" }}>
@@ -213,12 +215,13 @@ function card(doc: SignatureDocument, ctx: TemplateRenderContext) {
 // ━━━ CLEAN ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Pure text, accent name, compact separators.
 function clean(doc: SignatureDocument, ctx: TemplateRenderContext) {
+  const name = getNamePresentation("clean", doc.fullName, ctx.accentColor);
   return (
     <table role="presentation" cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark }}>
       <tbody>
         <tr>
           <td>
-            {nameImg(doc, ctx, { fontSize: "20px", fontWeight: 800, color: ctx.accentColor })}
+            {nameImg(doc, ctx, { fontSize: `${name.fontSize}px`, fontWeight: name.fontWeight, color: name.firstColor })}
             <div style={{ fontSize: "14px", color: dark, marginTop: "2px" }}>{doc.jobTitle}, {doc.company}</div>
             <div style={{ marginTop: "16px", fontSize: "13px", color: dark, lineHeight: "1.7" }}>
               <a href={`mailto:${doc.email}`} style={{ color: dark, textDecoration: "none" }}>{doc.email}</a>
@@ -241,13 +244,6 @@ export const templateDefinitions: TemplateDefinition[] = [
   { id: "card", name: "Card", description: "Visual anchor with a tinted headshot panel.", headline: "Structured and memorable.", supportsImage: true, render: card },
   { id: "clean", name: "Minimal", description: "Pure text, accent name, zero chrome.", headline: "Quiet and portable.", supportsImage: false, render: clean },
 ];
-
-export function splitName(name: string) {
-  const parts = name.split(" ");
-  const first = parts.slice(0, -1).join(" ") || parts[0];
-  const last = parts.length > 1 ? parts[parts.length - 1] : "";
-  return { first, last };
-}
 
 export function getTemplateDefinition(id: TemplateId): TemplateDefinition {
   return templateDefinitions.find((t) => t.id === id) ?? templateDefinitions[0];

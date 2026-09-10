@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { coerceSignatureDocument, resolveUrlForHtml } from "@/lib/document";
+import { coerceSignatureDocument, resolveUrlForHtml, resolveSocialUrlForHtml } from "@/lib/document";
 
 describe("coerceSignatureDocument", () => {
   it("normalizes imported documents and keeps only four socials", () => {
@@ -29,5 +29,20 @@ describe("coerceSignatureDocument", () => {
       "https://siggy.example/api/assets/123"
     );
     expect(resolveUrlForHtml("meridian.design")).toBe("https://meridian.design");
+  });
+});
+
+describe("social profile URLs", () => {
+  it("preserves full and domain-prefixed URLs", () => {
+    expect(resolveSocialUrlForHtml("x", "twitter.com/zachoelsner")).toBe("https://twitter.com/zachoelsner");
+    expect(resolveSocialUrlForHtml("linkedin", "https://linkedin.com/company/example")).toBe("https://linkedin.com/company/example");
+    expect(resolveSocialUrlForHtml("instagram", "instagram.com/zoe.quinn")).toBe("https://instagram.com/zoe.quinn");
+  });
+  it("trims handles and excludes unsupported schemes", () => {
+    expect(resolveSocialUrlForHtml("x", "  @zachoelsner  ")).toBe("https://x.com/zachoelsner");
+    expect(resolveSocialUrlForHtml("github", "zoelsner")).toBe("https://github.com/zoelsner");
+    expect(resolveSocialUrlForHtml("linkedin", "zoe-quinn")).toBe("https://www.linkedin.com/in/zoe-quinn");
+    expect(resolveSocialUrlForHtml("x", "javascript:alert(1)")).toBe("");
+    expect(resolveSocialUrlForHtml("x", "   ")).toBe("");
   });
 });

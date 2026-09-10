@@ -4,27 +4,26 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 
 import { SUPPORT_EMAIL } from "@/lib/site";
+import { requestAccessRestore } from "@/lib/billing/request-restore";
 
 export default function RestorePage() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
+    setFailed(false);
     try {
-      await fetch("/api/billing/restore", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      await requestAccessRestore(email);
+      setSent(true);
     } catch {
-      // Always show the success state — the response never reveals whether a
-      // purchase was found, so a network error looks the same to the user.
+      setFailed(true);
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
-    setSent(true);
   }
 
   return (
@@ -43,6 +42,9 @@ export default function RestorePage() {
         </p>
       ) : (
         <form onSubmit={handleSubmit}>
+          {failed ? (
+            <p role="alert">Couldn&rsquo;t request your access link right now. Please try again later, or email us below for help.</p>
+          ) : null}
           <div className="field">
             <label htmlFor="restore-email">Email</label>
             <input

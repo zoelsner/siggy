@@ -13,11 +13,12 @@ import { useAccess } from "@/lib/billing";
 import { GATES } from "@/lib/billing/gates";
 import { createDefaultDocument } from "@/lib/default-document";
 import { touchDocument } from "@/lib/document";
-import { DEFAULT_FREE_FONT, fontFamilyMap, fontOptions, getNameImageWeight, isSystemFont } from "@/lib/fonts";
+import { DEFAULT_FREE_FONT, fontFamilyMap, fontOptions, isSystemFont } from "@/lib/fonts";
+import { prepareSignatureOutput } from "@/lib/prepare-signature-output";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
 import { SUPPORT_EMAIL } from "@/lib/site";
 import { templateDefinitions } from "@/lib/templates";
-import type { AssetUploadResponse, ClientProfileId, RenderResult, SignatureDocument, SignatureImageAsset, TemplateId } from "@/lib/types";
+import type { ClientProfileId, RenderResult, SignatureDocument, SignatureImageAsset, TemplateId } from "@/lib/types";
 
 import { InstallGuide } from "./install-guide";
 import { SignatureEditor } from "./signature-editor";
@@ -45,6 +46,35 @@ const PREVIEW_PROFILES: Array<{ id: ClientProfileId; label: string }> = [
   { id: "outlook_web", label: "Outlook" },
   { id: "apple_mail", label: "Apple Mail" },
 ];
+
+// Selection-based copy fallback for browsers where the async clipboard API is
+// unavailable or denies the write (older WebKit, some in-app browsers).
+function legacyCopyHtml(html: string): boolean {
+  const host = window.document.createElement("div");
+  host.setAttribute("contenteditable", "true");
+  host.style.position = "fixed";
+  host.style.opacity = "0";
+  host.style.pointerEvents = "none";
+  host.innerHTML = html;
+  window.document.body.appendChild(host);
+
+  const selection = window.getSelection();
+  const range = window.document.createRange();
+  range.selectNodeContents(host);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+
+  let copied = false;
+  try {
+    copied = window.document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+
+  selection?.removeAllRanges();
+  host.remove();
+  return copied;
+}
 
 // Miniature of each template's actual layout, tinted with the live accent.
 function TemplateThumb({ id, accent }: { id: TemplateId; accent: string }) {
@@ -94,12 +124,15 @@ function TemplateThumb({ id, accent }: { id: TemplateId; accent: string }) {
 }
 
 export function StudioShell() {
-  const { unlocked, resolved, token, error, startCheckout } = useAccess();
+  const { unlocked, resolved, token, error, accessSaveFailed, startCheckout } = useAccess();
   const [document, setDocument] = useState<SignatureDocument>(() => createDefaultDocument());
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
   const [renderState, setRenderState] = useState<"idle" | "rendering" | "ready" | "error">("idle");
   const [copyLabel, setCopyLabel] = useState("Copy signature");
   const [isCopying, setIsCopying] = useState(false);
+  const [exportLabel, setExportLabel] = useState("↓ Export HTML");
+  const [isExporting, setIsExporting] = useState(false);
+  const [draftSaveFailed, setDraftSaveFailed] = useState(false);
   const [isInstallOpen, setInstallOpen] = useState(false);
   const [installConfirmed, setInstallConfirmed] = useState(false);
   const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("light");
@@ -120,7 +153,7 @@ export function StudioShell() {
   }, []);
 
   useEffect(() => {
-    adapterRef.current.save(document);
+    setDraftSaveFailed(!adapterRef.current.save(document));
   }, [document]);
 
   // Once access resolves as free, downgrade any gated features left in the
@@ -208,50 +241,40 @@ export function StudioShell() {
     setIsCopying(true);
     setCopyLabel("Preparing…");
 
+    // All fetch work lives inside this promise so navigator.clipboard.write is
+    // called synchronously within the click's user activation — WebKit revokes
+    // clipboard permission once the handler awaits, so awaiting the fetches
+    // before writing throws NotAllowedError on Safari and every iOS browser.
+    const resultPromise = prepareSignatureOutput(document, token);
+
     try {
-      let copyDoc = document;
-      if (!isSystemFont(document.fontFamily)) {
-        const nameRes = await fetch("/api/render-name", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: document.fullName,
-            fontFamily: document.fontFamily,
-            accentColor: document.accentColor,
-            weight: getNameImageWeight(document.fontFamily),
-            token,
-          }),
-        });
-        if (nameRes.ok) {
-          const payload = (await nameRes.json()) as AssetUploadResponse;
-          copyDoc = { ...document, nameImage: payload.asset };
+      let wroteViaClipboardApi = false;
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              "text/html": resultPromise.then((r) => new Blob([r.html], { type: "text/html" })),
+              "text/plain": resultPromise.then((r) => new Blob([r.plainText], { type: "text/plain" })),
+            }),
+          ]);
+          wroteViaClipboardApi = true;
+        } catch {
+          // Permission denied or promise-valued items unsupported — fall
+          // through to the selection-based fallback below.
         }
       }
 
-      const renderRes = await fetch("/api/render", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          document: copyDoc,
-          profileId: document.targetProfileId,
-          token,
-        }),
-      });
+      const result = await resultPromise;
 
-      if (!renderRes.ok) throw new Error("Render failed");
-
-      const result = (await renderRes.json()) as RenderResult;
-      const htmlBlob = new Blob([result.html], { type: "text/html" });
-      const textBlob = new Blob([result.plainText], { type: "text/plain" });
-      await navigator.clipboard.write([
-        new ClipboardItem({ "text/html": htmlBlob, "text/plain": textBlob }),
-      ]);
+      if (!wroteViaClipboardApi && !legacyCopyHtml(result.html)) {
+        throw new Error("clipboard_denied");
+      }
 
       setCopyLabel("Copied!");
       setInstallOpen(true);
       trackEvent("copy_clicked", { charCount: result.sizeBudget.charCount });
       window.setTimeout(() => setCopyLabel("Copy signature"), 1600);
-    } catch {
+    } catch (error) {
       setCopyLabel("Copy failed");
       window.setTimeout(() => setCopyLabel("Copy signature"), 1800);
     } finally {
@@ -265,17 +288,26 @@ export function StudioShell() {
     trackEvent("reset_clicked", { templateId: document.templateId });
   }
 
-  function handleExportHtml() {
-    if (!renderResult) return;
-
-    const blob = new Blob([renderResult.html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const anchor = window.document.createElement("a");
-    anchor.href = url;
-    anchor.download = "siggy-signature.html";
-    anchor.click();
-    URL.revokeObjectURL(url);
-    trackEvent("export_html_clicked", { charCount: renderResult.sizeBudget.charCount });
+  async function handleExportHtml() {
+    if (!renderResult || isExporting) return;
+    setIsExporting(true);
+    setExportLabel("Preparing…");
+    try {
+      const result = await prepareSignatureOutput(document, token);
+      const blob = new Blob([result.html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const anchor = window.document.createElement("a");
+      anchor.href = url;
+      anchor.download = "siggy-signature.html";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      trackEvent("export_html_clicked", { charCount: result.sizeBudget.charCount });
+      setExportLabel("↓ Export HTML");
+    } catch {
+      setExportLabel("Export failed — retry");
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   function handleInstallConfirm() {
@@ -322,15 +354,15 @@ export function StudioShell() {
           </button>
           <button
             className="button button--subtle"
-            disabled={!renderResult || renderState === "rendering"}
+            disabled={!renderResult || renderState === "rendering" || isExporting || isCopying}
             onClick={handleExportHtml}
             type="button"
           >
-            ↓ Export HTML
+            {exportLabel}
           </button>
           <button
             className="button button--primary"
-            disabled={!renderResult || renderState === "rendering" || isCopying}
+            disabled={!renderResult || renderState === "rendering" || isCopying || isExporting}
             onClick={handleCopy}
             type="button"
           >
@@ -339,11 +371,23 @@ export function StudioShell() {
         </div>
       </div>
 
+      {draftSaveFailed ? (
+        <div className="builder-banner builder-banner--error" role="status">
+          This browser couldn&apos;t save your draft. You can keep editing, but copy or export
+          your signature before leaving this page.
+        </div>
+      ) : null}
+      {accessSaveFailed ? (
+        <div className="builder-banner builder-banner--error" role="status">
+          Your purchase is active on this page, but this browser couldn&apos;t remember it.
+          You may need to <a href="/restore">restore access</a> next time.
+        </div>
+      ) : null}
       {error === "redeem_failed" ? (
         <div className="builder-banner builder-banner--error" role="alert">
-          We received your payment but couldn&apos;t verify it automatically. Email{" "}
+          We couldn&apos;t confirm your purchase. Try <a href="/restore">restoring access</a>, or email{" "}
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> with your Stripe receipt and
-          we&apos;ll unlock you right away.
+          we&apos;ll help you recover access.
         </div>
       ) : null}
       {error === "checkout_failed" ? (

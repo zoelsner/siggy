@@ -116,11 +116,16 @@ export async function isSessionPaid(sessionId: string): Promise<boolean> {
 // never bounds session age.
 export async function findPaidSessionByEmail(email: string): Promise<boolean> {
   try {
-    const sessions = await client().checkout.sessions.list({
+    // Iterate through every page: a lifetime purchase can be older than the
+    // newest 100 checkout attempts. Stop fetching as soon as a match is found.
+    const sessions = client().checkout.sessions.list({
       customer_details: { email },
       limit: 100,
     });
-    return sessions.data.some((session) => session.payment_status === "paid");
+    for await (const session of sessions) {
+      if (session.payment_status === "paid") return true;
+    }
+    return false;
   } catch {
     return false;
   }

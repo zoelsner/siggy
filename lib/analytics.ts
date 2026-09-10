@@ -3,20 +3,26 @@ import { track } from "@vercel/analytics";
 import type { AnalyticsEvent } from "./types";
 
 const SESSION_KEY = "siggy:session-id";
+let memorySessionId: string | null = null;
 
 export function getSessionId(): string {
   if (typeof window === "undefined") {
     return "server";
   }
 
-  const existing = window.sessionStorage.getItem(SESSION_KEY);
-  if (existing) {
-    return existing;
-  }
+  try {
+    const existing = window.sessionStorage.getItem(SESSION_KEY);
+    if (existing) return existing;
 
-  const id = crypto.randomUUID();
-  window.sessionStorage.setItem(SESSION_KEY, id);
-  return id;
+    const id = crypto.randomUUID();
+    window.sessionStorage.setItem(SESSION_KEY, id);
+    return id;
+  } catch {
+    // Analytics must not interrupt editing or a verified purchase when browser
+    // storage is blocked. This identifier lasts only for the current page.
+    memorySessionId ??= crypto.randomUUID();
+    return memorySessionId;
+  }
 }
 
 export function trackEvent(event: string, context?: AnalyticsEvent["context"]) {

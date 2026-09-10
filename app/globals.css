@@ -929,6 +929,14 @@ select {
   line-height: 1.1;
 }
 
+/* Custom typography belongs to names; contact text uses email-safe Arial. */
+.sig-editor__bold-name-input,
+.sig-editor__underline-name-input,
+.sig-editor__card-name-input,
+.sig-editor__clean-name-input {
+  font-family: var(--name-font);
+}
+
 /* Bold template — first/last name stacked, uppercase, last in accent color. */
 
 .sig-editor__bold-name {
@@ -962,6 +970,61 @@ select {
   background: var(--accent, #4f46e5);
   border-radius: 2px;
   margin-top: 5px;
+}
+
+.sig-editor__bold-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-top: 8px;
+  text-align: left;
+}
+
+.sig-editor__bold-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding-right: 24px;
+}
+
+.sig-editor__bold-title-input {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #0f172a;
+  text-transform: uppercase;
+}
+
+.sig-editor__bold-company-input {
+  font-size: 13px;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.sig-editor__bold-contacts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border-left: 1px solid #e2e8f0;
+  padding-left: 24px;
+}
+
+.sig-editor__bold-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sig-editor__bold-contact-icon {
+  color: #94a3b8;
+  font-size: 13px;
+  width: 13px;
+  flex-shrink: 0;
+}
+
+.sig-editor__bold-contacts .sig-editor__bold-contact-input--accent {
+  color: var(--accent, #4f46e5);
 }
 
 .sig-editor__role {
@@ -3450,6 +3513,30 @@ select {
   .topbar {
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .topbar__right {
+    flex: 1 1 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .sig-editor__bold-details {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .sig-editor__bold-identity {
+    padding-right: 0;
+  }
+
+  .sig-editor__bold-contacts {
+    border-left: 0;
+    border-top: 1px solid #e2e8f0;
+    padding-left: 0;
+    padding-top: 12px;
+    min-width: 0;
   }
 
   .topbar__eyebrow {

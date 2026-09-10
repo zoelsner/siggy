@@ -2,7 +2,7 @@ import React from "react";
 
 import { GATES } from "./billing/gates";
 import { clientProfiles } from "./client-profiles";
-import { coerceSignatureDocument, getFilledSocials, isLocalOrigin, resolveUrlForHtml } from "./document";
+import { coerceSignatureDocument, getFilledSocials, resolveSocialUrlForHtml, isLocalOrigin, resolveUrlForHtml } from "./document";
 import { DEFAULT_FREE_FONT, isSystemFont } from "./fonts";
 import { getTemplateDefinition } from "./templates";
 import type { ClientProfileId, RenderResult, RenderWarning, SignatureDocument } from "./types";
@@ -137,7 +137,8 @@ function buildPlainText(document: SignatureDocument): string {
     document.phone,
     document.email,
     document.website,
-    ...getFilledSocials(document).map((social) => `${social.platform}: ${resolveUrlForHtml(social.url)}`)
+    ...getFilledSocials(document).map((social) => `${social.platform}: ${resolveSocialUrlForHtml(social.platform, social.url)}`),
+    document.cta?.text && document.cta.url ? `${document.cta.text}: ${resolveUrlForHtml(document.cta.url)}` : ""
   ].filter(Boolean);
 
   return lines.join("\n");

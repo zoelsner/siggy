@@ -11,7 +11,7 @@ const stripe = new Stripe(secretKey);
 const product = await stripe.products.create({
   name: "Siggy Lifetime Access",
   description:
-    "Lifetime access to Siggy templates, fonts, colors, headshots, and watermark removal.",
+    "Remove the Made with Siggy watermark for life. All templates, fonts, colors, headshots, and exports are free.",
   default_price_data: {
     currency: "usd",
     unit_amount: 1900,

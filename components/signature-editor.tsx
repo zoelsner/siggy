@@ -512,7 +512,7 @@ export function SignatureEditor({
 
   return (
     <>
-    <div className="sig-editor" style={{ fontFamily }}>
+    <div className="sig-editor" style={{ fontFamily: "Arial, 'Segoe UI', 'Helvetica Neue', Helvetica, sans-serif", ["--name-font" as string]: fontFamily }}>
       <div
         className={`sig-editor__card sig-editor__card--${document.templateId}${supportsImage ? "" : " sig-editor__card--no-avatar"}`}
         style={{ ["--accent" as string]: document.accentColor }}
@@ -741,73 +741,76 @@ export function SignatureEditor({
               <div className="sig-editor__bold-rule" />
             </div>
 
-          <div className="sig-editor__role">
-            <InlineField
-              id="sig-job"
-              label="Title"
-              value={document.jobTitle}
-              onChange={setJobTitle}
-              onFocus={onFieldFocus}
-              placeholder="Job title"
-              className="sig-editor__role-input"
-            />
-            <span aria-hidden="true" className="sig-editor__role-sep">·</span>
-            <InlineField
-              id="sig-company"
-              label="Company"
-              value={document.company}
-              onChange={setCompany}
-              onFocus={onFieldFocus}
-              placeholder="Company"
-              className="sig-editor__role-input"
-            />
-          </div>
-
-          <div className="sig-editor__contacts">
-            <InlineField
-              id="sig-email"
-              label="Email"
-              value={document.email}
-              onChange={setEmail}
-              onFocus={onFieldFocus}
-              placeholder="you@example.com"
-              className="sig-editor__contact-input"
-              minWidth={140}
-            />
-            {visible.has("phone") ? (
-              <Removable label="Phone" onRemove={() => removeField("phone")}>
-                <span aria-hidden="true" className="sig-editor__contact-sep">|</span>
+            <div className="sig-editor__bold-details">
+              <div className="sig-editor__bold-identity">
                 <InlineField
-                  id="sig-phone"
-                  label="Phone"
-                  value={document.phone}
-                  onChange={setPhone}
+                  id="sig-job"
+                  label="Title"
+                  value={document.jobTitle}
+                  onChange={setJobTitle}
                   onFocus={onFieldFocus}
-                  placeholder="+1 (555) 000-0000"
-                  className="sig-editor__contact-input"
-                  autoFocus={!document.phone}
+                  placeholder="Job title"
+                  className="sig-editor__bold-title-input"
                 />
-              </Removable>
-            ) : null}
-            {visible.has("website") ? (
-              <Removable label="Website" onRemove={() => removeField("website")}>
-                <span aria-hidden="true" className="sig-editor__contact-sep">|</span>
                 <InlineField
-                  id="sig-website"
-                  label="Website"
-                  value={document.website}
-                  onChange={setWebsite}
+                  id="sig-company"
+                  label="Company"
+                  value={document.company}
+                  onChange={setCompany}
                   onFocus={onFieldFocus}
-                  placeholder="yoursite.com"
-                  className="sig-editor__contact-input"
-                  autoFocus={!document.website}
+                  placeholder="Company"
+                  className="sig-editor__bold-company-input"
                 />
-              </Removable>
-            ) : null}
-          </div>
+                {socialsBlock}
+                {ctaBlock}
+              </div>
+              <div className="sig-editor__bold-contacts">
+                {visible.has("phone") ? (
+                  <Removable label="Phone" onRemove={() => removeField("phone")}>
+                    <span aria-hidden="true" className="sig-editor__bold-contact-icon">☏</span>
+                    <InlineField
+                      id="sig-phone"
+                      label="Phone"
+                      value={document.phone}
+                      onChange={setPhone}
+                      onFocus={onFieldFocus}
+                      placeholder="+1 (555) 000-0000"
+                      className="sig-editor__contact-input"
+                      autoFocus={!document.phone}
+                    />
+                  </Removable>
+                ) : null}
+                <div className="sig-editor__bold-contact-row">
+                  <span aria-hidden="true" className="sig-editor__bold-contact-icon">✉</span>
+                  <InlineField
+                    id="sig-email"
+                    label="Email"
+                    value={document.email}
+                    onChange={setEmail}
+                    onFocus={onFieldFocus}
+                    placeholder="you@example.com"
+                    className="sig-editor__contact-input sig-editor__bold-contact-input--accent"
+                    minWidth={140}
+                  />
+                </div>
+                {visible.has("website") ? (
+                  <Removable label="Website" onRemove={() => removeField("website")}>
+                    <span aria-hidden="true" className="sig-editor__bold-contact-icon">⊕</span>
+                    <InlineField
+                      id="sig-website"
+                      label="Website"
+                      value={websiteDisplay}
+                      onChange={setWebsite}
+                      onFocus={onFieldFocus}
+                      placeholder="yoursite.com"
+                      className="sig-editor__contact-input sig-editor__bold-contact-input--accent"
+                      autoFocus={!document.website}
+                    />
+                  </Removable>
+                ) : null}
+              </div>
+            </div>
 
-          {socialsBlock}
-          {ctaBlock}
           {addFieldBlock}
           {watermarkBlock}
         </div>

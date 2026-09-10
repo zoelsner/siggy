@@ -117,8 +117,8 @@ export interface AnalyticsEvent {
 
 export interface PersistenceAdapter {
   load: () => SignatureDocument | null;
-  save: (document: SignatureDocument) => void;
-  clear: () => void;
+  save: (document: SignatureDocument) => boolean;
+  clear: () => boolean;
 }
 
 export interface AssetUploadResponse {

@@ -14,12 +14,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
 
-  const email = body.email;
+  const email = body?.email;
   if (!email || typeof email !== "string" || !EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "invalid_email" }, { status: 400 });
   }
 
-  // Always respond { ok: true } regardless of outcome — the response must
+  // This check is identical for every valid email, before any purchase lookup.
+  // Do not imply a link was sent when the service cannot send one at all.
+  if (!process.env.RESEND_API_KEY || !process.env.STRIPE_SECRET_KEY || !process.env.SIGGY_TOKEN_SECRET) {
+    return NextResponse.json({ error: "restore_unavailable" }, { status: 503 });
+  }
+
+  // With the service configured, respond { ok: true } regardless of outcome — the response must
   // never reveal whether this email has a purchase on file.
   try {
     const paid = await findPaidSessionByEmail(email);

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+
 const STORAGE_KEY = "siggy_access";
 
 export type AccessError = "checkout_failed" | "redeem_failed" | null;
@@ -36,11 +37,20 @@ async function redeemSession(sessionId: string): Promise<string | null> {
   }
 }
 
-function storeAndCleanUrl(token: string, params: URLSearchParams, param: string): void {
-  localStorage.setItem(STORAGE_KEY, token);
-  params.delete(param);
+function storeAndCleanUrl(token: string, params: URLSearchParams): boolean {
+  let saved = false;
+  try {
+    localStorage.setItem(STORAGE_KEY, token);
+    saved = true;
+  } catch {
+    // Verified access can still be used in memory for this page session.
+  }
+  // Never use the URL as a storage fallback for purchase credentials.
+  params.delete("session_id");
+  params.delete("access_token");
   const next = window.location.pathname + (params.toString() ? `?${params}` : "");
   window.history.replaceState({}, "", next);
+  return saved;
 }
 
 export function useAccess() {
@@ -48,6 +58,7 @@ export function useAccess() {
   const [resolved, setResolved] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<AccessError>(null);
+  const [accessSaveFailed, setAccessSaveFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,14 +71,14 @@ export function useAccess() {
         const redeemed = await redeemSession(sessionId);
         if (cancelled) return;
         if (redeemed) {
-          storeAndCleanUrl(redeemed, params, "session_id");
+          setAccessSaveFailed(!storeAndCleanUrl(redeemed, params));
           setToken(redeemed);
           setUnlocked(true);
           setResolved(true);
           return;
         }
-        // The user just came back from a paid checkout but redemption failed —
-        // surface this so the UI can show "we received your payment, contact support".
+        // A checkout return could not be verified. Do not claim the payment
+        // succeeded until the server has confirmed it.
         setError("redeem_failed");
       }
 
@@ -77,7 +88,7 @@ export function useAccess() {
         const valid = await verifyToken(accessToken);
         if (cancelled) return;
         if (valid) {
-          storeAndCleanUrl(accessToken, params, "access_token");
+          setAccessSaveFailed(!storeAndCleanUrl(accessToken, params));
           setToken(accessToken);
           setUnlocked(true);
           setResolved(true);
@@ -86,7 +97,12 @@ export function useAccess() {
       }
 
       // 3. Verify any cached token.
-      const stored = localStorage.getItem(STORAGE_KEY);
+      let stored: string | null = null;
+      try {
+        stored = localStorage.getItem(STORAGE_KEY);
+      } catch {
+        // Storage may be disabled. Resolve normally as free in that case.
+      }
       if (stored) {
         const valid = await verifyToken(stored);
         if (cancelled) return;
@@ -94,7 +110,11 @@ export function useAccess() {
           setToken(stored);
           setUnlocked(true);
         } else {
-          localStorage.removeItem(STORAGE_KEY);
+          try {
+            localStorage.removeItem(STORAGE_KEY);
+          } catch {
+            // An invalid cached token never grants access, even if removal fails.
+          }
         }
       }
       setResolved(true);
@@ -129,5 +149,5 @@ export function useAccess() {
     }
   }, []);
 
-  return { unlocked, resolved, token, error, startCheckout };
+  return { unlocked, resolved, token, error, accessSaveFailed, startCheckout };
 }

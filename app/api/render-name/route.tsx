@@ -1,26 +1,24 @@
-import React from "react";
 import { NextResponse } from "next/server";
-import satori from "satori";
-import { Resvg } from "@resvg/resvg-js";
 
 import { GATES } from "@/lib/billing/gates";
 import { verifyAccessToken } from "@/lib/billing/token";
 import { fetchFontData, isSystemFont } from "@/lib/fonts";
+import { getNamePresentation } from "@/lib/template-name";
+import { nameFontWeight, renderNameImage } from "@/lib/render-name-image";
+import type { TemplateId } from "@/lib/types";
 import { saveAsset } from "@/lib/runtime";
 
 interface RenderNameRequest {
   name: string;
   fontFamily: string;
   accentColor: string;
-  weight?: number;
-  fontSize?: number;
-  color?: string;
+  templateId?: TemplateId;
   token?: string;
 }
 
 export async function POST(request: Request) {
   const body = (await request.json()) as RenderNameRequest;
-  const { name, fontFamily, accentColor = "#4f46e5", weight = 700, fontSize: requestedSize = 32, color, token } = body;
+  const { name, fontFamily, accentColor = "#4f46e5", templateId = "clean", token } = body;
 
   // When pro fonts are gated, reject unauthenticated calls instead of
   // trusting the client UI — every render here uploads a blob.
@@ -31,8 +29,8 @@ export async function POST(request: Request) {
     }
   }
 
-  if (!name || !fontFamily) {
-    return NextResponse.json({ error: "Missing name or fontFamily." }, { status: 400 });
+  if (typeof name !== "string" || !name.trim() || name.length > 200 || !fontFamily || !["bold", "edge", "card", "clean"].includes(templateId)) {
+    return NextResponse.json({ error: "Invalid name, fontFamily, or templateId." }, { status: 400 });
   }
 
   if (isSystemFont(fontFamily)) {
@@ -40,60 +38,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const fontData = await fetchFontData(fontFamily, name, weight);
-
-    // Render at 2x for retina
-    const scale = 2;
-    const fontSize = requestedSize * scale;
-    const textColor = color ?? accentColor;
-
-    // Estimate width based on font characteristics
-    const charWidthRatio = fontFamily === "unbounded" ? 0.65 : 0.55;
-    const estimatedWidth = Math.ceil(name.length * fontSize * charWidthRatio) + 40;
-    const height = Math.ceil(fontSize * 1.5) + 20;
-
-    const svg = await satori(
-      <div
-        style={{
-          fontFamily: fontData.name,
-          fontSize: `${fontSize}px`,
-          fontWeight: weight,
-          color: textColor,
-          display: "flex",
-          alignItems: "center",
-          letterSpacing: "-0.02em",
-          lineHeight: 1.15,
-          padding: "10px 0",
-        }}
-      >
-        {name}
-      </div>,
-      {
-        width: estimatedWidth,
-        height,
-        fonts: [
-          {
-            name: fontData.name,
-            data: fontData.data,
-            weight: weight as 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900,
-            style: "normal" as const,
-          },
-        ],
-      }
-    );
-
-    const resvg = new Resvg(svg, {
-      fitTo: { mode: "width" as const, value: estimatedWidth },
-    });
-    const pngData = resvg.render();
-    const pngBuffer = Buffer.from(pngData.asPng());
+    const presentation = getNamePresentation(templateId, name, accentColor);
+    const weight = nameFontWeight(fontFamily, presentation.fontWeight);
+    // Bold uppercases the name, so its subset must include uppercase glyphs.
+    const fontData = await fetchFontData(fontFamily, `${presentation.first} ${presentation.last}`, weight);
+    const rendered = await renderNameImage(templateId, name, accentColor, { ...fontData, weight });
 
     const id = crypto.randomUUID();
-    const asset = await saveAsset(id, pngBuffer, {
+    const asset = await saveAsset(id, rendered.data, {
       extension: "png",
       contentType: "image/png",
-      width: Math.round(estimatedWidth / scale),
-      height: Math.round(height / scale),
+      width: rendered.width,
+      height: rendered.height,
       alt: `${name} signature`,
     });
 
