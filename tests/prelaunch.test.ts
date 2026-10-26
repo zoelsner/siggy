@@ -1,4 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import TermsPage from "@/app/terms/page";
+import { sendAccessEmail } from "@/lib/billing/email";
+import { SUPPORT_EMAIL } from "@/lib/site";
 import { NextRequest } from "next/server";
 import { createDefaultDocument } from "@/lib/default-document";
 import { coerceSignatureDocument, normalizeSignatureForOutput, resolveUrlForHtml } from "@/lib/document";
@@ -10,9 +15,23 @@ import { POST as render } from "@/app/api/render/route";
 import { POST as verifyToken } from "@/app/api/billing/verify-token/route";
 import { POST as verifySession } from "@/app/api/billing/verify-session/route";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe("prelaunch input and export regression coverage", () => {
+  it("keeps the approved 30-day terms and receipt reply path consistent", async () => {
+    vi.stubGlobal("React", React);
+    const html = renderToStaticMarkup(React.createElement(TermsPage));
+    expect(html).toContain("30 days of purchase");
+    expect(html).toContain("reply to your receipt email");
+    expect(html).toContain("full refund");
+    expect(html).not.toMatch(/all sales are final|within 14 days|at our discretion/i);
+    vi.stubEnv("RESEND_API_KEY", "offline-receipt-content-fixture");
+    const delivery = vi.fn().mockResolvedValue(Response.json({ id: "offline-fixture" }));
+    vi.stubGlobal("fetch", delivery);
+    await sendAccessEmail({ to: "audit@example.com", token: "offline-fixture", kind: "receipt" });
+    const mail = JSON.parse(delivery.mock.calls[0][1].body);
+    expect(mail.reply_to).toBe(SUPPORT_EMAIL);
+  });
   it("preserves existing long or invalid drafts exactly and reports actionable limits", () => {
     const draft = { ...createDefaultDocument(), fullName: "Alexandria Example ".repeat(10).trim(),
       jobTitle: "Senior Product & Brand Design Consultant ".repeat(4).trim(),
