@@ -2,7 +2,8 @@ import React from "react";
 
 import { GATES } from "./billing/gates";
 import { clientProfiles } from "./client-profiles";
-import { coerceSignatureDocument, getFilledSocials, resolveSocialUrlForHtml, isLocalOrigin, resolveUrlForHtml } from "./document";
+import { coerceSignatureDocument, normalizeSignatureForOutput, getFilledSocials, resolveSocialUrlForHtml, isLocalOrigin, resolveUrlForHtml } from "./document";
+import { validateSignatureDocument } from "./validation";
 import { DEFAULT_FREE_FONT, isSystemFont } from "./fonts";
 import { getTemplateDefinition } from "./templates";
 import type { ClientProfileId, RenderResult, RenderWarning, SignatureDocument } from "./types";
@@ -32,7 +33,8 @@ export async function renderSignature(
 ): Promise<RenderResult> {
   const { renderToStaticMarkup } = await import("react-dom/server");
   const unlocked = options.unlocked ?? false;
-  const coerced = coerceSignatureDocument(input);
+  const source = coerceSignatureDocument(input);
+  const coerced = normalizeSignatureForOutput(source);
   const document = unlocked ? coerced : enforceFreeTier(coerced);
   const profile = clientProfiles[options.profileId ?? document.targetProfileId];
   const template = getTemplateDefinition(document.templateId);
@@ -55,6 +57,7 @@ export async function renderSignature(
 
   const html = profile.transform(canonicalHtml);
   const warnings = dedupeWarnings([
+    ...validateSignatureDocument(source),
     ...profile.validate(html, document),
     ...createOriginWarnings(document, options.origin),
     ...createContentWarnings(document)
@@ -138,7 +141,7 @@ function buildPlainText(document: SignatureDocument): string {
     document.email,
     document.website,
     ...getFilledSocials(document).map((social) => `${social.platform}: ${resolveSocialUrlForHtml(social.platform, social.url)}`),
-    document.cta?.text && document.cta.url ? `${document.cta.text}: ${resolveUrlForHtml(document.cta.url)}` : ""
+    document.cta?.text && resolveUrlForHtml(document.cta.url) ? `${document.cta.text}: ${resolveUrlForHtml(document.cta.url)}` : ""
   ].filter(Boolean);
 
   return lines.join("\n");

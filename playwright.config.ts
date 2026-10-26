@@ -24,6 +24,11 @@ export default defineConfig({
     },
   ],
   webServer: {
+    env: {
+      SIGGY_TOKEN_SECRET: "playwright-local-fixture-only",
+      STRIPE_SECRET_KEY: "", STRIPE_PRICE_ID: "", STRIPE_WEBHOOK_SECRET: "",
+      RESEND_API_KEY: "", BLOB_READ_WRITE_TOKEN: "",
+    },
     command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
     url: "http://127.0.0.1:3100/editor",
     reuseExistingServer: !process.env.CI,

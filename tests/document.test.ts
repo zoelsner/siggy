@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { coerceSignatureDocument, resolveUrlForHtml, resolveSocialUrlForHtml } from "@/lib/document";
+import { coerceSignatureDocument, normalizeSignatureForOutput, resolveUrlForHtml, resolveSocialUrlForHtml } from "@/lib/document";
 
 describe("coerceSignatureDocument", () => {
   it("normalizes imported documents and keeps only four socials", () => {
@@ -18,7 +18,8 @@ describe("coerceSignatureDocument", () => {
       ]
     });
 
-    expect(document.fullName).toBe("Test User");
+    expect(document.fullName).toBe("  Test User  ");
+    expect(normalizeSignatureForOutput(document).fullName).toBe("Test User");
     expect(document.accentColor).toBe("#112233");
     expect(document.socials).toHaveLength(4);
     expect(document.socials[0].url).toBe("linkedin.com/in/test");

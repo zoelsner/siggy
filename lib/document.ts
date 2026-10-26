@@ -1,5 +1,6 @@
 import { createDefaultDocument } from "./default-document";
 import { fontOptions } from "./fonts";
+import { normalizeOutputText, safeWebUrl } from "./validation";
 import type {
   ClientProfileId,
   SignatureDocument,
@@ -34,11 +35,11 @@ export function coerceSignatureDocument(input: unknown): SignatureDocument {
     version: 1,
     templateId: pickTemplate(record.templateId, fallback.templateId),
     targetProfileId: pickClientProfile(record.targetProfileId, fallback.targetProfileId),
-    fullName: normalizeText(record.fullName, fallback.fullName, 80),
-    jobTitle: normalizeText(record.jobTitle, fallback.jobTitle, 80),
-    company: normalizeText(record.company, fallback.company, 80),
+    fullName: normalizeText(record.fullName, fallback.fullName),
+    jobTitle: normalizeText(record.jobTitle, fallback.jobTitle),
+    company: normalizeText(record.company, fallback.company),
     email: normalizeEmail(record.email, fallback.email),
-    phone: normalizeText(record.phone, fallback.phone, 32),
+    phone: normalizeText(record.phone, fallback.phone),
     website: normalizeUrl(record.website, fallback.website),
     accentColor: normalizeHexColor(record.accentColor, fallback.accentColor),
     fontFamily: pickFontFamily(record.fontFamily, fallback.fontFamily),
@@ -46,12 +47,29 @@ export function coerceSignatureDocument(input: unknown): SignatureDocument {
     nameImage: normalizeImage(record.nameImage),
     socials: normalizeSocials(record.socials),
     cta: record.cta && typeof record.cta === "object"
-      ? { text: normalizeText((record.cta as Record<string, unknown>).text, "", 60), url: normalizeSafeUrl((record.cta as Record<string, unknown>).url) }
+      ? { text: normalizeText((record.cta as Record<string, unknown>).text, ""), url: normalizeText((record.cta as Record<string, unknown>).url, "") }
       : null,
     meta: {
       updatedAt: normalizeTimestamp(meta.updatedAt, fallback.meta.updatedAt),
-      draftName: normalizeText(meta.draftName, fallback.meta.draftName, 60)
+      draftName: normalizeText(meta.draftName, fallback.meta.draftName)
     }
+  };
+}
+
+// Draft loading preserves user input. Only an export snapshot is normalized;
+// validation reports limits instead of silently cutting names or saved fields.
+export function normalizeSignatureForOutput(input: unknown): SignatureDocument {
+  const document = coerceSignatureDocument(input);
+  return {
+    ...document,
+    fullName: normalizeOutputText(document.fullName),
+    jobTitle: normalizeOutputText(document.jobTitle),
+    company: normalizeOutputText(document.company),
+    email: document.email.trim().toLowerCase(),
+    phone: normalizeOutputText(document.phone),
+    website: document.website.trim(),
+    socials: document.socials.map(social => ({ ...social, url: social.url.trim() })),
+    cta: document.cta ? { text: normalizeOutputText(document.cta.text), url: document.cta.url.trim() } : null,
   };
 }
 
@@ -70,19 +88,7 @@ export function touchDocument(document: SignatureDocument): SignatureDocument {
 }
 
 export function resolveUrlForHtml(url: string, origin?: string): string {
-  if (!url.trim()) {
-    return "";
-  }
-
-  if (/^https?:\/\//i.test(url)) {
-    return url;
-  }
-
-  if (url.startsWith("/") && origin) {
-    return new URL(url, origin).toString();
-  }
-
-  return `https://${url.replace(/^\/+/, "")}`;
+  return safeWebUrl(url, origin);
 }
 
 // Accept the handle people naturally type into a platform-specific field,
@@ -90,7 +96,7 @@ export function resolveUrlForHtml(url: string, origin?: string): string {
 export function resolveSocialUrlForHtml(platform: SocialPlatform, value: string): string {
   const raw = value.trim();
   if (!raw) return "";
-  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^https?:\/\//i.test(raw)) return safeWebUrl(raw);
   if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return "";
   if (/^(?:www\.)?(?:linkedin\.com|x\.com|twitter\.com|instagram\.com|github\.com)(?:\/|$)/i.test(raw)) {
     return resolveUrlForHtml(raw);
@@ -139,22 +145,20 @@ function pickFontFamily(value: unknown, fallback: string): string {
     : fallback;
 }
 
-function normalizeText(value: unknown, fallback: string, maxLength: number): string {
+function normalizeText(value: unknown, fallback: string): string {
   if (typeof value !== "string") {
     return fallback;
   }
 
-  const trimmed = value.trim().replace(/\s+/g, " ");
-  return trimmed.length > 0 ? trimmed.slice(0, maxLength) : "";
+  return value;
 }
 
 function normalizeEmail(value: unknown, fallback: string): string {
-  const normalized = normalizeText(value, fallback, 120).toLowerCase();
-  return normalized;
+  return normalizeText(value, fallback);
 }
 
 function normalizeUrl(value: unknown, fallback: string): string {
-  const raw = normalizeText(value, fallback, 160);
+  const raw = normalizeText(value, fallback);
   if (!raw) {
     return "";
   }
@@ -163,14 +167,6 @@ function normalizeUrl(value: unknown, fallback: string): string {
     return raw;
   }
 
-  return raw;
-}
-
-function normalizeSafeUrl(value: unknown): string {
-  const raw = normalizeUrl(value, "");
-  if (!raw) return "";
-  if (/^https?:\/\//i.test(raw)) return raw;
-  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return "";
   return raw;
 }
 

@@ -4,11 +4,18 @@ import { renderToStaticMarkup } from "react-dom/server";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { getNamePresentation, renderNameImageContent } from "../lib/template-name";
-import { nameFontWeight, renderNameImage } from "../lib/render-name-image";
+import { nameFontWeight, renderNameImage, UnsupportedNameGlyphsError, NameImageSizeError } from "../lib/render-name-image";
 import type { TemplateId } from "../lib/types";
 
 const accent = "#4f46e5";
 describe("template-specific exported names", () => {
+  it("rejects missing font glyphs and excessive image dimensions before upload", async () => {
+    const bytes = readFileSync(resolve("node_modules/next/dist/compiled/@vercel/og/noto-sans-v27-latin-regular.ttf"));
+    const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    const font = { name: "Noto Sans", data, weight: 400 };
+    await expect(renderNameImage("clean", "李 明", accent, font)).rejects.toBeInstanceOf(UnsupportedNameGlyphsError);
+    await expect(renderNameImage("bold", "W".repeat(70), accent, font)).rejects.toBeInstanceOf(NameImageSizeError);
+  });
   it.each([ ["bold", 38, 900, 2], ["edge", 26, 800, 1], ["card", 24, 800, 1], ["clean", 20, 800, 1] ] as const)("preserves %s typography", (id, size, weight, lines) => {
     const p = getNamePresentation(id, "Alex Morgan", accent);
     expect(p).toMatchObject({ fontSize: size, fontWeight: weight, lines });

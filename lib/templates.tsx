@@ -51,7 +51,7 @@ function socials(doc: SignatureDocument, color: string) {
 }
 
 function ctaButton(doc: SignatureDocument, accentColor: string) {
-  if (!doc.cta?.text || !doc.cta?.url) return null;
+  if (!doc.cta?.text || !resolveUrlForHtml(doc.cta.url)) return null;
   return (
     <table cellPadding={0} cellSpacing={0} style={{ marginTop: "14px" }}>
       <tbody><tr><td style={{

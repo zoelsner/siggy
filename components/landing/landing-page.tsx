@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { LandingFooter } from "@/components/landing/footer";
 import { Hero } from "@/components/landing/hero";
@@ -18,12 +18,22 @@ const draftAdapter = createBrowserDraftAdapter();
 
 function persistDraft(patch: Partial<SignatureDocument>) {
   const doc = draftAdapter.load() ?? createDefaultDocument();
-  draftAdapter.save({ ...doc, ...patch });
+  return draftAdapter.save({ ...doc, ...patch });
 }
 
 export function LandingPage({ profession }: { profession?: Profession }) {
   const [name, setName] = useState(profession?.exampleName ?? "Sarah Chen");
   const [accent, setAccent] = useState(profession?.accent ?? "#4f46e5");
+  const [draftSaved, setDraftSaved] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const stored = draftAdapter.load();
+    if (stored) {
+      setName(stored.fullName);
+      setAccent(stored.accentColor);
+      setDraftSaved(true);
+    }
+  }, []);
 
   const persona = profession
     ? { title: profession.exampleTitle, company: profession.exampleCompany, email: profession.exampleEmail }
@@ -31,12 +41,12 @@ export function LandingPage({ profession }: { profession?: Profession }) {
 
   const handleNameChange = (value: string) => {
     setName(value);
-    persistDraft({ fullName: value });
+    setDraftSaved(persistDraft({ fullName: value }));
   };
 
   const handleAccentChange = (color: string) => {
     setAccent(color);
-    persistDraft({ accentColor: color });
+    setDraftSaved(persistDraft({ accentColor: color }));
   };
 
   const handleSelectTemplate = (templateId: TemplateId) => {
@@ -52,6 +62,7 @@ export function LandingPage({ profession }: { profession?: Profession }) {
         accent={accent}
         onNameChange={handleNameChange}
         onAccentChange={handleAccentChange}
+        draftSaved={draftSaved}
         eyebrow={profession ? `The 30-second signature for ${profession.plural}` : undefined}
         headline={profession?.headline}
         subtitle={profession?.subtitle}

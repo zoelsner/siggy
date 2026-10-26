@@ -9,12 +9,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export async function POST(request: NextRequest) {
-  const payload = (await request.json()) as unknown;
+  const payload = (await request.json().catch(() => null)) as unknown;
+  if (!isRecord(payload)) return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   const document = isRecord(payload) && "document" in payload ? payload.document : payload;
   const profileId =
     isRecord(payload) && typeof payload.profileId === "string"
       ? (payload.profileId as ClientProfileId)
       : undefined;
+  if (profileId && !["gmail_web", "outlook_web", "outlook_windows_classic", "apple_mail"].includes(profileId)) {
+    return NextResponse.json({ error: "invalid_profile" }, { status: 400 });
+  }
 
   // Server-derived unlock: verify the access token instead of trusting a client boolean.
   // Without this, anyone could POST { unlocked: true } and bypass the watermark.

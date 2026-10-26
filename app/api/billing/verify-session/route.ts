@@ -4,8 +4,8 @@ import { isSessionPaid } from "@/lib/billing/stripe";
 import { signAccessToken } from "@/lib/billing/token";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { sessionId?: string };
-  const sessionId = body.sessionId;
+  const body = (await request.json().catch(() => null)) as { sessionId?: string } | null;
+  const sessionId = body?.sessionId;
 
   if (!sessionId || typeof sessionId !== "string" || !sessionId.startsWith("cs_")) {
     return NextResponse.json({ valid: false }, { status: 400 });

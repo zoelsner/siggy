@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { verifyAccessToken } from "@/lib/billing/token";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { token?: string };
-  const token = body.token;
+  const body = (await request.json().catch(() => null)) as { token?: string } | null;
+  const token = body?.token;
 
   if (!token || typeof token !== "string" || token.length > 1024) {
     return NextResponse.json({ valid: false }, { status: 400 });

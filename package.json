@@ -19,7 +19,8 @@
     "react-dom": "^19.0.0",
     "satori": "^0.12.0",
     "sharp": "^0.33.5",
-    "stripe": "^22.1.1"
+    "stripe": "^22.1.1",
+    "@shuding/opentype.js": "1.4.0-beta.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
