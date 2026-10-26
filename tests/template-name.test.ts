@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import sharp from "sharp";
@@ -9,6 +9,29 @@ import type { TemplateId } from "../lib/types";
 
 const accent = "#4f46e5";
 describe("template-specific exported names", () => {
+  it("keeps Underline's translucent accent bar in the actual exported PNG", async () => {
+    const bytes = readFileSync(resolve("node_modules/next/dist/compiled/@vercel/og/noto-sans-v27-latin-regular.ttf"));
+    const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    const image = await renderNameImage("edge", "Alex Morgan", accent, { name: "Noto Sans", data, weight: 400 });
+    const { data: pixels, info } = await sharp(image.data).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    let widestAccentRow = 0;
+    for (let y = 0; y < info.height; y++) {
+      let accentPixels = 0;
+      for (let x = 0; x < info.width; x++) {
+        const i = (y * info.width + x) * 4;
+        // Raster alpha premultiplication can round RGB by a few levels.
+        const translucentAccent = Math.abs(pixels[i] - 79) <= 3 && Math.abs(pixels[i + 1] - 70) <= 3 && Math.abs(pixels[i + 2] - 229) <= 3 && pixels[i + 3] >= 50 && pixels[i + 3] <= 62;
+        if (translucentAccent) accentPixels++;
+      }
+      // Descenders can cross the highlight; measure total row coverage.
+      widestAccentRow = Math.max(widestAccentRow, accentPixels);
+    }
+    if (process.env.SIGGY_SAVE_RASTER_EVIDENCE === "1") {
+      mkdirSync("test-results", { recursive: true });
+      writeFileSync("test-results/underline-export.png", image.data);
+    }
+    expect(widestAccentRow).toBeGreaterThan(info.width * 0.9);
+  });
   it("rejects missing font glyphs and excessive image dimensions before upload", async () => {
     const bytes = readFileSync(resolve("node_modules/next/dist/compiled/@vercel/og/noto-sans-v27-latin-regular.ttf"));
     const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
