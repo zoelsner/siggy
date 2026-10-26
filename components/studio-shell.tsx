@@ -18,10 +18,12 @@ import { prepareSignatureOutput } from "@/lib/prepare-signature-output";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
 import { SUPPORT_EMAIL } from "@/lib/site";
 import { templateDefinitions } from "@/lib/templates";
+import { validateSignatureDocument } from "@/lib/validation";
 import type { ClientProfileId, RenderResult, SignatureDocument, SignatureImageAsset, TemplateId } from "@/lib/types";
 
 import { InstallGuide } from "./install-guide";
 import { SignatureEditor } from "./signature-editor";
+import { FieldErrorsContext } from "./inline-field";
 
 const accentChoices = [
   "#1d1b19", // Charcoal   — neutral
@@ -134,11 +136,15 @@ export function StudioShell() {
   const [isExporting, setIsExporting] = useState(false);
   const [draftSaveFailed, setDraftSaveFailed] = useState(false);
   const [isInstallOpen, setInstallOpen] = useState(false);
-  const [installConfirmed, setInstallConfirmed] = useState(false);
+  const [confirmedProfiles, setConfirmedProfiles] = useState<Partial<Record<ClientProfileId, boolean>>>({});
+  const [outputError, setOutputError] = useState<string | null>(null);
   const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("light");
   const adapterRef = useRef(createBrowserDraftAdapter());
   const hasTrackedInputRef = useRef(false);
   const deferredDocument = useDeferredValue(document);
+  const currentIssues = validateSignatureDocument(document);
+  const hasInputErrors = currentIssues.some(issue => issue.severity === "error");
+  const installConfirmed = confirmedProfiles[document.targetProfileId] === true;
 
   useEffect(() => {
     const stored = adapterRef.current.load();
@@ -200,6 +206,7 @@ export function StudioShell() {
         setRenderState("ready");
       } catch (error) {
         if (controller.signal.aborted) return;
+        setRenderResult(null);
         setRenderState("error");
       }
     };
@@ -209,6 +216,7 @@ export function StudioShell() {
   }, [deferredDocument, token]);
 
   function updateDocument(mutator: (current: SignatureDocument) => SignatureDocument) {
+    setOutputError(null);
     setDocument((current) => {
       const next = touchDocument(mutator(current));
 
@@ -236,10 +244,11 @@ export function StudioShell() {
   }
 
   async function handleCopy() {
-    if (!renderResult || isCopying) return;
+    if (!renderResult || isCopying || validateSignatureDocument(document).length) return;
 
     setIsCopying(true);
     setCopyLabel("Preparing…");
+    setOutputError(null);
 
     // All fetch work lives inside this promise so navigator.clipboard.write is
     // called synchronously within the click's user activation — WebKit revokes
@@ -275,6 +284,8 @@ export function StudioShell() {
       trackEvent("copy_clicked", { charCount: result.sizeBudget.charCount });
       window.setTimeout(() => setCopyLabel("Copy signature"), 1600);
     } catch (error) {
+      setOutputError(error instanceof Error && !/^(name_render_failed|render_failed|clipboard_denied)$/.test(error.message)
+        ? error.message : "Couldn't copy your signature. Please try again.");
       setCopyLabel("Copy failed");
       window.setTimeout(() => setCopyLabel("Copy signature"), 1800);
     } finally {
@@ -289,9 +300,10 @@ export function StudioShell() {
   }
 
   async function handleExportHtml() {
-    if (!renderResult || isExporting) return;
+    if (!renderResult || isExporting || validateSignatureDocument(document).length) return;
     setIsExporting(true);
     setExportLabel("Preparing…");
+    setOutputError(null);
     try {
       const result = await prepareSignatureOutput(document, token);
       const blob = new Blob([result.html], { type: "text/html" });
@@ -303,7 +315,9 @@ export function StudioShell() {
       URL.revokeObjectURL(url);
       trackEvent("export_html_clicked", { charCount: result.sizeBudget.charCount });
       setExportLabel("↓ Export HTML");
-    } catch {
+    } catch (error) {
+      setOutputError(error instanceof Error && !/^(name_render_failed|render_failed)$/.test(error.message)
+        ? error.message : "Couldn't export your signature. Please try again.");
       setExportLabel("Export failed — retry");
     } finally {
       setIsExporting(false);
@@ -312,16 +326,16 @@ export function StudioShell() {
 
   function handleInstallConfirm() {
     if (!installConfirmed) {
-      trackEvent("install_confirmed", { client: "gmail_web" });
+      trackEvent("install_confirmed", { client: document.targetProfileId });
     }
-    setInstallConfirmed(true);
+    setConfirmedProfiles(current => ({ ...current, [document.targetProfileId]: true }));
   }
 
   function handleInstallToggle() {
     const next = !isInstallOpen;
     setInstallOpen(next);
     if (next) {
-      trackEvent("install_guide_opened", { client: "gmail_web" });
+      trackEvent("install_guide_opened", { client: document.targetProfileId });
     }
   }
 
@@ -354,7 +368,7 @@ export function StudioShell() {
           </button>
           <button
             className="button button--subtle"
-            disabled={!renderResult || renderState === "rendering" || isExporting || isCopying}
+            disabled={!renderResult || renderState !== "ready" || hasInputErrors || renderResult.warnings.some(warning => warning.severity === "error") || isExporting || isCopying}
             onClick={handleExportHtml}
             type="button"
           >
@@ -362,7 +376,7 @@ export function StudioShell() {
           </button>
           <button
             className="button button--primary"
-            disabled={!renderResult || renderState === "rendering" || isCopying || isExporting}
+            disabled={!renderResult || renderState !== "ready" || hasInputErrors || renderResult.warnings.some(warning => warning.severity === "error") || isCopying || isExporting}
             onClick={handleCopy}
             type="button"
           >
@@ -370,6 +384,13 @@ export function StudioShell() {
           </button>
         </div>
       </div>
+
+      {outputError ? <div className="builder-banner builder-banner--error" role="alert">{outputError}</div> : null}
+      {error === "verification_unavailable" ? (
+        <div className="builder-banner builder-banner--error" role="alert">
+          We couldn&apos;t check your saved purchase right now. Your access link is still saved. Reload to try again when you&apos;re connected.
+        </div>
+      ) : null}
 
       {draftSaveFailed ? (
         <div className="builder-banner builder-banner--error" role="status">
@@ -388,6 +409,11 @@ export function StudioShell() {
           We couldn&apos;t confirm your purchase. Try <a href="/restore">restoring access</a>, or email{" "}
           <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> with your Stripe receipt and
           we&apos;ll help you recover access.
+        </div>
+      ) : null}
+      {error === "restore_required" ? (
+        <div className="builder-banner builder-banner--error" role="alert">
+          Your Siggy payment is confirmed. This checkout link is too old to unlock directly. <a href="/restore">Restore access</a> using your purchase email for a fresh access link.
         </div>
       ) : null}
       {error === "checkout_failed" ? (
@@ -437,13 +463,14 @@ export function StudioShell() {
           <div className="preview-toolbar">
             <div className="preview-toolbar__group">
               <span className="preview-toolbar__label">Preview as</span>
-              <div className="segmented-control" role="tablist" aria-label="Preview profile">
+              <div className="segmented-control" role="group" aria-label="Preview profile">
                 {PREVIEW_PROFILES.map((profile) => {
                   const active = document.targetProfileId === profile.id;
                   return (
                     <button
                       key={profile.id}
                       className={`segmented-control__item${active ? " segmented-control__item--active" : ""}`}
+                      aria-pressed={active}
                       onClick={() =>
                         updateDocument((current) => ({ ...current, targetProfileId: profile.id }))
                       }
@@ -457,10 +484,11 @@ export function StudioShell() {
             </div>
             <div className="preview-toolbar__group">
               <span className="preview-toolbar__label">Theme</span>
-              <div className="segmented-control" role="tablist" aria-label="Preview theme">
+              <div className="segmented-control" role="group" aria-label="Preview theme">
                 <button
                   className={`segmented-control__item${previewTheme === "light" ? " segmented-control__item--active" : ""}`}
                   onClick={() => setPreviewTheme("light")}
+                  aria-pressed={previewTheme === "light"}
                   type="button"
                 >
                   Light
@@ -468,6 +496,7 @@ export function StudioShell() {
                 <button
                   className={`segmented-control__item${previewTheme === "dark" ? " segmented-control__item--active" : ""}`}
                   onClick={() => setPreviewTheme("dark")}
+                  aria-pressed={previewTheme === "dark"}
                   type="button"
                 >
                   Dark
@@ -476,11 +505,17 @@ export function StudioShell() {
             </div>
           </div>
 
-          <div className="preview-status" aria-live="polite">
-            {renderResult ? (
+          <div className="preview-status" id="signature-validation" aria-live="polite">
+            {currentIssues.length ? currentIssues.map((issue, index) => (
+              <span className="preview-status__item preview-status__item--error" id={currentIssues.findIndex(item => item.field === issue.field) === index ? `validation-${issue.field}` : undefined} key={issue.code}>{issue.message}</span>
+            )) : renderState === "error" ? (
+              <span className="preview-status__item preview-status__item--error">Couldn&apos;t check this signature. Copy and export are paused. Edit a field or reload to try again.</span>
+            ) : renderState === "rendering" ? (
+              <span className="preview-status__item preview-status__item--muted">Checking {activeProfileLabel}…</span>
+            ) : renderResult ? (
               renderResult.warnings.length === 0 ? (
                 <span className="preview-status__item preview-status__item--ok">
-                  ✓ Fits {activeProfileLabel} · {renderResult.sizeBudget.charCount.toLocaleString()} chars
+                  ✓ Checks passed for {activeProfileLabel} · {renderResult.sizeBudget.charCount.toLocaleString()} chars
                   {renderResult.sizeBudget.status !== "ok"
                     ? ` of ${renderResult.sizeBudget.softLimit.toLocaleString()}`
                     : ""}
@@ -505,6 +540,7 @@ export function StudioShell() {
           <div className="message-canvas">
             <article className="message-card">
               <div className="message-card__signature">
+                <FieldErrorsContext.Provider value={Object.fromEntries(currentIssues.map(issue => [issue.field, issue.message]))}>
                 <SignatureEditor
                   document={document}
                   imageUrl={document.image?.url ?? null}
@@ -516,6 +552,7 @@ export function StudioShell() {
                   onImageRemoved={handleImageRemoved}
                   onUpsell={handleUnlock}
                 />
+                </FieldErrorsContext.Provider>
               </div>
             </article>
           </div>
@@ -584,6 +621,8 @@ export function StudioShell() {
               <label htmlFor="fullName">Full name</label>
               <input
                 id="fullName"
+                aria-invalid={currentIssues.some(issue => issue.field === "fullName")}
+                aria-describedby={currentIssues.some(issue => issue.field === "fullName") ? "validation-fullName" : undefined}
                 onChange={(event) =>
                   updateDocument((current) => ({
                     ...current,
@@ -597,6 +636,8 @@ export function StudioShell() {
               <label htmlFor="jobTitle">Title</label>
               <input
                 id="jobTitle"
+                aria-invalid={currentIssues.some(issue => issue.field === "jobTitle")}
+                aria-describedby={currentIssues.some(issue => issue.field === "jobTitle") ? "validation-jobTitle" : undefined}
                 onChange={(event) =>
                   updateDocument((current) => ({
                     ...current,
@@ -610,6 +651,8 @@ export function StudioShell() {
               <label htmlFor="company">Company</label>
               <input
                 id="company"
+                aria-invalid={currentIssues.some(issue => issue.field === "company")}
+                aria-describedby={currentIssues.some(issue => issue.field === "company") ? "validation-company" : undefined}
                 onChange={(event) =>
                   updateDocument((current) => ({
                     ...current,
@@ -623,6 +666,8 @@ export function StudioShell() {
               <label htmlFor="email">Email</label>
               <input
                 id="email"
+                aria-invalid={currentIssues.some(issue => issue.field === "email")}
+                aria-describedby={currentIssues.some(issue => issue.field === "email") ? "validation-email" : undefined}
                 type="email"
                 onChange={(event) =>
                   updateDocument((current) => ({
@@ -637,6 +682,8 @@ export function StudioShell() {
               <label htmlFor="phone">Phone</label>
               <input
                 id="phone"
+                aria-invalid={currentIssues.some(issue => issue.field === "phone")}
+                aria-describedby={currentIssues.some(issue => issue.field === "phone") ? "validation-phone" : undefined}
                 type="tel"
                 onChange={(event) =>
                   updateDocument((current) => ({
@@ -651,6 +698,8 @@ export function StudioShell() {
               <label htmlFor="website">Website</label>
               <input
                 id="website"
+                aria-invalid={currentIssues.some(issue => issue.field === "website")}
+                aria-describedby={currentIssues.some(issue => issue.field === "website") ? "validation-website" : undefined}
                 type="url"
                 onChange={(event) =>
                   updateDocument((current) => ({
@@ -676,6 +725,7 @@ export function StudioShell() {
 
           <div className="inspector-install">
             <InstallGuide
+              profileId={document.targetProfileId}
               isConfirmed={installConfirmed}
               isOpen={isInstallOpen}
               onConfirmInstall={handleInstallConfirm}

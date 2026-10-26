@@ -51,7 +51,7 @@ function socials(doc: SignatureDocument, color: string) {
 }
 
 function ctaButton(doc: SignatureDocument, accentColor: string) {
-  if (!doc.cta?.text || !doc.cta?.url) return null;
+  if (!doc.cta?.text || !resolveUrlForHtml(doc.cta.url)) return null;
   return (
     <table cellPadding={0} cellSpacing={0} style={{ marginTop: "14px" }}>
       <tbody><tr><td style={{
@@ -144,14 +144,14 @@ function bold(doc: SignatureDocument, ctx: TemplateRenderContext) {
   const nameElement = (ctx.nameImageUrl && ctx.nameImageWidth && ctx.nameImageHeight)
     ? <img alt={doc.fullName} src={ctx.nameImageUrl} width={ctx.nameImageWidth} height={ctx.nameImageHeight} style={{ display: "block" }} />
     : (
-      <div style={{ fontSize: `${name.fontSize}px`, fontWeight: name.fontWeight, letterSpacing: name.letterSpacing, lineHeight: `${name.lineHeight}`, ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
+      <div style={{ fontSize: `${name.fontSize}px`, fontWeight: name.fontWeight, letterSpacing: name.letterSpacing, lineHeight: `${name.lineHeight}`, overflowWrap: "anywhere", wordBreak: "break-all", ...(nameFontFamily ? { fontFamily: nameFontFamily } : {}) }}>
         <span style={{ color: name.firstColor }}>{name.first}</span>
         {name.last ? <><br /><span style={{ color: name.lastColor }}>{name.last}</span></> : null}
       </div>
     );
 
   return (
-    <table role="presentation" width={520} cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", fontFamily: font, color: dark, width: "520px" }}>
+    <table role="presentation" width={520} cellPadding={0} cellSpacing={0} style={{ borderCollapse: "collapse", tableLayout: "fixed", fontFamily: font, color: dark, width: "520px" }}>
       <tbody>
         <tr>
           <td colSpan={2} style={{ paddingBottom: "4px" }}>

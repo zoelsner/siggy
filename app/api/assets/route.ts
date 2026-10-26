@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import sharp from "sharp";
 
 import { GATES } from "@/lib/billing/gates";
 import { verifyAccessToken } from "@/lib/billing/token";
 import { saveAsset } from "@/lib/runtime";
+import { normalizeHeadshot } from "@/lib/upload-image";
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
+  const formData = await request.formData().catch(() => null);
+  if (!formData) return NextResponse.json({ error: "Invalid upload form." }, { status: 400 });
   const file = formData.get("file");
   const altValue = formData.get("alt");
 
@@ -33,35 +34,20 @@ export async function POST(request: Request) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const pipeline = sharp(buffer).rotate().resize({
-    width: 128,
-    height: 128,
-    fit: "cover"
-  });
-  const metadata = await pipeline.metadata();
+  let image: Awaited<ReturnType<typeof normalizeHeadshot>>;
+  try {
+    image = await normalizeHeadshot(buffer);
+  } catch {
+    return NextResponse.json({ error: "Invalid image. Use a PNG, JPEG, or WebP smaller than 4MB, up to 16 megapixels and 8192 pixels per side." }, { status: 400 });
+  }
   const id = crypto.randomUUID();
   const alt = typeof altValue === "string" && altValue.trim() ? altValue.trim() : "Profile image";
 
-  let outputBuffer: Buffer;
-  let extension: "jpg" | "png";
-  let contentType: string;
-
-  if (metadata.hasAlpha) {
-    outputBuffer = await pipeline.png({ compressionLevel: 9 }).toBuffer();
-    extension = "png";
-    contentType = "image/png";
-  } else {
-    outputBuffer = await pipeline.jpeg({ quality: 82 }).toBuffer();
-    extension = "jpg";
-    contentType = "image/jpeg";
-  }
-
-  const normalized = await sharp(outputBuffer).metadata();
-  const asset = await saveAsset(id, outputBuffer, {
-    extension,
-    contentType,
-    width: normalized.width ?? 128,
-    height: normalized.height ?? 128,
+  const asset = await saveAsset(id, image.data, {
+    extension: image.extension,
+    contentType: image.contentType,
+    width: image.width,
+    height: image.height,
     alt
   });
 

@@ -9,7 +9,7 @@ import { sendAccessEmail } from "@/lib/billing/email";
 import { findPaidSessionByEmail } from "@/lib/billing/stripe";
 import { signAccessToken } from "@/lib/billing/token";
 
-const required = ["RESEND_API_KEY", "STRIPE_SECRET_KEY", "SIGGY_TOKEN_SECRET"] as const;
+const required = ["RESEND_API_KEY", "STRIPE_SECRET_KEY", "SIGGY_TOKEN_SECRET", "STRIPE_PRICE_ID"] as const;
 function request(email: string) {
   return new Request("http://localhost/api/billing/restore", { method: "POST", body: JSON.stringify({ email }) });
 }

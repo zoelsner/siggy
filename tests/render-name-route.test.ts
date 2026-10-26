@@ -17,6 +17,15 @@ import { renderNameImage } from "@/lib/render-name-image";
 
 beforeEach(() => vi.clearAllMocks());
 describe("name image API", () => {
+  it("rejects a combining-mark-heavy single grapheme before font, raster or upload work", async () => {
+    const name = "a" + "\u0301".repeat(10_000);
+    const response = await POST(new Request("http://localhost/api/render-name", { method: "POST", body: JSON.stringify({ name, fontFamily: "outfit", templateId: "edge" }) }));
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toContain("too complex");
+    expect(fetchFontData).not.toHaveBeenCalled();
+    expect(renderNameImage).not.toHaveBeenCalled();
+    expect(saveAsset).not.toHaveBeenCalled();
+  });
   it("requests the displayed uppercase glyphs and retains generated dimensions", async () => {
     const response = await POST(new Request("http://localhost/api/render-name", { method: "POST", body: JSON.stringify({ name: "Alex Morgan", fontFamily: "outfit", accentColor: "#4f46e5", templateId: "bold" }) }));
     expect(response.status).toBe(200);

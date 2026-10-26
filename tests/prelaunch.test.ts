@@ -1,0 +1,122 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import TermsPage from "@/app/terms/page";
+import { sendAccessEmail } from "@/lib/billing/email";
+import { SUPPORT_EMAIL } from "@/lib/site";
+import { NextRequest } from "next/server";
+import { createDefaultDocument } from "@/lib/default-document";
+import { coerceSignatureDocument, normalizeSignatureForOutput, resolveUrlForHtml } from "@/lib/document";
+import { createBrowserDraftAdapter } from "@/lib/persistence";
+import { prepareSignatureOutput } from "@/lib/prepare-signature-output";
+import { characterCount, validateSignatureDocument, safeWebUrl } from "@/lib/validation";
+import { renderSignature } from "@/lib/render";
+import { POST as render } from "@/app/api/render/route";
+import { POST as verifyToken } from "@/app/api/billing/verify-token/route";
+import { POST as verifySession } from "@/app/api/billing/verify-session/route";
+
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+
+describe("prelaunch input and export regression coverage", () => {
+  it("keeps the approved 30-day terms and receipt reply path consistent", async () => {
+    vi.stubGlobal("React", React);
+    const html = renderToStaticMarkup(React.createElement(TermsPage));
+    expect(html).toContain("30 days of purchase");
+    expect(html).toContain("reply to your receipt email");
+    expect(html).toContain("full refund");
+    expect(html).not.toMatch(/all sales are final|within 14 days|at our discretion/i);
+    vi.stubEnv("RESEND_API_KEY", "offline-receipt-content-fixture");
+    const delivery = vi.fn().mockResolvedValue(Response.json({ id: "offline-fixture" }));
+    vi.stubGlobal("fetch", delivery);
+    await sendAccessEmail({ to: "audit@example.com", token: "offline-fixture", kind: "receipt" });
+    const mail = JSON.parse(delivery.mock.calls[0][1].body);
+    expect(mail.reply_to).toBe(SUPPORT_EMAIL);
+  });
+  it("preserves existing long or invalid drafts exactly and reports actionable limits", () => {
+    const draft = { ...createDefaultDocument(), fullName: "Alexandria Example ".repeat(10).trim(),
+      jobTitle: "Senior Product & Brand Design Consultant ".repeat(4).trim(),
+      company: "Example Creative Strategy Studio ".repeat(5).trim(), email: "not-an-email", website: "https://" };
+    vi.stubGlobal("window", { localStorage: { getItem: () => JSON.stringify(draft) } });
+    expect(createBrowserDraftAdapter().load()).toEqual(draft);
+    expect(coerceSignatureDocument(draft)).toEqual(draft);
+    const issues = validateSignatureDocument(draft);
+    expect(issues.map(issue => issue.field)).toEqual(expect.arrayContaining(["fullName", "jobTitle", "company", "email", "website"]));
+    expect(issues.find(issue => issue.field === "fullName")?.message).toContain("80 characters");
+  });
+  it.each(["javascript:alert(1)", "https://", "https:example.com", "https:/example.com", "https://example .com", "ftp://example.com", "https://user:password@example.com"])("rejects invalid contact destinations: %s", website => {
+    expect(resolveUrlForHtml(website)).toBe("");
+    expect(validateSignatureDocument({ ...createDefaultDocument(), website })).toEqual(expect.arrayContaining([expect.objectContaining({ field: "website", severity: "error" })]));
+  });
+  it.each(["https:example.com", "https:/example.com"])("rejects malformed website, CTA and social scheme spelling: %s", async destination => {
+    const doc = { ...createDefaultDocument(), website: destination,
+      cta: { text: "Book a call", url: destination },
+      socials: [{ id: "x", platform: "x" as const, url: destination }],
+    };
+    expect(validateSignatureDocument(doc).map(issue => issue.field)).toEqual(expect.arrayContaining(["website", "cta-url", "social-x"]));
+    const result = await renderSignature(doc);
+    expect(result.html).not.toContain(`href="${destination}"`);
+    expect(result.html).not.toContain("BOOK A CALL");
+    expect(result.plainText).not.toContain(`x: ${destination}`);
+  });
+  it("returns canonical absolute website, CTA and social destinations without changing query semantics", async () => {
+    const destination = "HTTPS://EXAMPLE.COM:443?x=a%2Bb&dup=1&dup=2#section";
+    const canonical = "https://example.com/?x=a%2Bb&dup=1&dup=2#section";
+    expect(safeWebUrl(destination)).toBe(canonical);
+    const result = await renderSignature({ ...createDefaultDocument(), website: destination,
+      cta: { text: "Book a call", url: destination }, socials: [{ id: "x", platform: "x", url: destination }],
+    });
+    expect(result.html.match(/href="https:\/\/example\.com\/\?x=a%2Bb&amp;dup=1&amp;dup=2#section"/g)).toHaveLength(3);
+    expect(result.plainText).toContain(`Book a call: ${canonical}`);
+  });
+  it("accepts plus addresses, bare domains, social handles, and query parameters", () => {
+    const doc = { ...createDefaultDocument(), email: "alex+work@example.com", website: "example.com/?a=1&b=2", socials: [
+      { id: "x", platform: "x" as const, url: "@alex_audit" },
+      { id: "linkedin", platform: "linkedin" as const, url: "in/alex-audit" },
+    ], cta: { text: "Book a call", url: "https://example.com/?source=siggy&lang=en" } };
+    expect(validateSignatureDocument(doc)).toEqual([]);
+    expect(resolveUrlForHtml(doc.website)).toBe("https://example.com/?a=1&b=2");
+  });
+  it("counts combined names and Unicode graphemes without cutting a saved character", () => {
+    const doc = { ...createDefaultDocument(), fullName: "A".repeat(79) + "👩🏽‍💻" };
+    expect(characterCount(doc.fullName)).toBe(80);
+    expect(validateSignatureDocument(doc)).toEqual([]);
+    expect(coerceSignatureDocument(doc).fullName).toBe(doc.fullName);
+    expect(validateSignatureDocument({ ...doc, fullName: doc.fullName + " Last" })).toEqual(expect.arrayContaining([expect.objectContaining({ field: "fullName" })]));
+  });
+  it("normalizes the same snapshot before name rasterization and final HTML", async () => {
+    const result = { html: "ok", plainText: "Alex Audit" };
+    const request = vi.fn().mockResolvedValueOnce(Response.json({ asset: { id: "image", url: "https://example.com/image.png", width: 120, height: 40, alt: "Alex Audit" } })).mockResolvedValueOnce(Response.json(result));
+    vi.stubGlobal("fetch", request);
+    const doc = { ...createDefaultDocument(), fullName: "  Alex   Audit  ", targetProfileId: "apple_mail" as const };
+    expect(await prepareSignatureOutput(doc, null)).toEqual(result);
+    expect(JSON.parse(request.mock.calls[0][1].body).name).toBe("Alex Audit");
+    expect(JSON.parse(request.mock.calls[1][1].body).document.fullName).toBe("Alex Audit");
+    expect(JSON.parse(request.mock.calls[1][1].body).profileId).toBe("apple_mail");
+    expect(doc.fullName).toBe("  Alex   Audit  ");
+  });
+  it("rejects invalid current input before any export request", async () => {
+    const request = vi.fn(); vi.stubGlobal("fetch", request);
+    await expect(prepareSignatureOutput({ ...createDefaultDocument(), email: "not-an-email" }, null)).rejects.toThrow("valid email");
+    expect(request).not.toHaveBeenCalled();
+  });
+  it("exports live system-font text instead of missing-glyph boxes", async () => {
+    const request = vi.fn().mockResolvedValueOnce(Response.json({ fallback: "text" })).mockResolvedValueOnce(Response.json({ html: "李 明", plainText: "李 明" }));
+    vi.stubGlobal("fetch", request);
+    await prepareSignatureOutput({ ...createDefaultDocument(), fullName: "李 明" }, null);
+    expect(JSON.parse(request.mock.calls[1][1].body).document).toMatchObject({ fullName: "李 明", fontFamily: "arial", nameImage: null });
+  });
+  it("surfaces the controlled oversized-name error instead of exporting a clipped image", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ error: "This name is too wide. Choose a system font." }, { status: 422 })));
+    await expect(prepareSignatureOutput(createDefaultDocument(), null)).rejects.toThrow("too wide");
+  });
+  it("does not claim malformed contact information passes compatibility checks", async () => {
+    const result = await renderSignature({ ...createDefaultDocument(), email: "not-an-email", website: "https://" });
+    expect(result.warnings.filter(warning => warning.severity === "error").map(warning => warning.code)).toEqual(expect.arrayContaining(["invalid-email", "invalid-website"]));
+  });
+  it("rejects invalid profile overrides and malformed billing bodies cleanly", async () => {
+    const response = await render(new NextRequest("http://localhost/api/render", { method: "POST", body: JSON.stringify({ document: createDefaultDocument(), profileId: "missing" }) }));
+    expect(response.status).toBe(400);
+    expect((await verifyToken(new Request("http://localhost/api/billing/verify-token", { method: "POST", body: "{" }))).status).toBe(400);
+    expect((await verifySession(new Request("http://localhost/api/billing/verify-session", { method: "POST", body: "null" }))).status).toBe(400);
+  });
+});

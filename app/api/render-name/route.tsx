@@ -4,7 +4,8 @@ import { GATES } from "@/lib/billing/gates";
 import { verifyAccessToken } from "@/lib/billing/token";
 import { fetchFontData, isSystemFont } from "@/lib/fonts";
 import { getNamePresentation } from "@/lib/template-name";
-import { nameFontWeight, renderNameImage } from "@/lib/render-name-image";
+import { nameFontWeight, renderNameImage, UnsupportedNameGlyphsError, NameImageSizeError } from "@/lib/render-name-image";
+import { characterCount, FIELD_LIMITS, MAX_NAME_CODE_UNITS, COMPLEX_NAME_MESSAGE, normalizeOutputText } from "@/lib/validation";
 import type { TemplateId } from "@/lib/types";
 import { saveAsset } from "@/lib/runtime";
 
@@ -17,8 +18,12 @@ interface RenderNameRequest {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as RenderNameRequest;
+  const body = (await request.json().catch(() => null)) as RenderNameRequest | null;
+  if (!body || typeof body !== "object") return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   const { name, fontFamily, accentColor = "#4f46e5", templateId = "clean", token } = body;
+  if (typeof name === "string" && name.length > MAX_NAME_CODE_UNITS) {
+    return NextResponse.json({ error: COMPLEX_NAME_MESSAGE }, { status: 400 });
+  }
 
   // When pro fonts are gated, reject unauthenticated calls instead of
   // trusting the client UI — every render here uploads a blob.
@@ -29,7 +34,7 @@ export async function POST(request: Request) {
     }
   }
 
-  if (typeof name !== "string" || !name.trim() || name.length > 200 || !fontFamily || !["bold", "edge", "card", "clean"].includes(templateId)) {
+  if (typeof name !== "string" || !name.trim() || characterCount(normalizeOutputText(name)) > FIELD_LIMITS.fullName || typeof fontFamily !== "string" || !/^#[0-9a-f]{6}$/i.test(accentColor) || !["bold", "edge", "card", "clean"].includes(templateId)) {
     return NextResponse.json({ error: "Invalid name, fontFamily, or templateId." }, { status: 400 });
   }
 
@@ -38,11 +43,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const presentation = getNamePresentation(templateId, name, accentColor);
+    const normalizedName = normalizeOutputText(name);
+    const presentation = getNamePresentation(templateId, normalizedName, accentColor);
     const weight = nameFontWeight(fontFamily, presentation.fontWeight);
     // Bold uppercases the name, so its subset must include uppercase glyphs.
     const fontData = await fetchFontData(fontFamily, `${presentation.first} ${presentation.last}`, weight);
-    const rendered = await renderNameImage(templateId, name, accentColor, { ...fontData, weight });
+    const rendered = await renderNameImage(templateId, normalizedName, accentColor, { ...fontData, weight });
 
     const id = crypto.randomUUID();
     const asset = await saveAsset(id, rendered.data, {
@@ -50,11 +56,13 @@ export async function POST(request: Request) {
       contentType: "image/png",
       width: rendered.width,
       height: rendered.height,
-      alt: `${name} signature`,
+      alt: `${normalizedName} signature`,
     });
 
     return NextResponse.json({ asset });
   } catch (error) {
+    if (error instanceof UnsupportedNameGlyphsError) return NextResponse.json({ fallback: "text" });
+    if (error instanceof NameImageSizeError) return NextResponse.json({ error: error.message }, { status: 422 });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Name rendering failed." },
       { status: 500 }

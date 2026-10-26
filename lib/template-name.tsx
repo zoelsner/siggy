@@ -33,7 +33,7 @@ export function renderNameImageContent(template: TemplateId, name: string, accen
         <span style={{ color: p.firstColor }}>{p.first}</span>
         {p.last ? <span style={{ color: p.lastColor }}>{p.lines === 2 ? p.last : ` ${p.last}`}</span> : null}
       </div>
-      {p.underline ? <div style={{ height: 8 * scale, backgroundColor: accentColor, opacity: 0.22, borderRadius: 2 * scale, marginTop: -6 * scale, width: "100%" }} /> : null}
+      {p.underline ? <div style={{ height: 8 * scale, backgroundColor: accentColor, opacity: 0.22, borderRadius: 2 * scale, marginTop: -6 * scale, alignSelf: "stretch", flexShrink: 0 }} /> : null}
     </div>
   );
 }

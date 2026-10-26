@@ -11,7 +11,7 @@ export default function TermsPage() {
     <main className="legal-page">
       <a href="/" className="legal-page__back">&larr; Back to Siggy</a>
       <h1>Terms &amp; Conditions</h1>
-      <p className="legal-page__updated">Last updated: March 30, 2026</p>
+      <p className="legal-page__updated">Last updated: October 26, 2026</p>
 
       <h2>1. Overview</h2>
       <p>
@@ -30,9 +30,9 @@ export default function TermsPage() {
 
       <h2>3. Payment &amp; Refunds</h2>
       <p>
-        Payments are processed through Stripe. All sales are final. If you experience a
-        technical issue that prevents you from using the Service, contact us within 14 days of
-        purchase and we will work to resolve it or issue a refund at our discretion.
+        Payments are processed through Stripe. If Siggy isn&rsquo;t for you, contact us within
+        30 days of purchase — reply to your receipt email or write to {SUPPORT_EMAIL} — and
+        we&rsquo;ll issue a full refund.
       </p>
 
       <h2>4. Acceptable Use</h2>

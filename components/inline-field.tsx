@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+
+export const FieldErrorsContext = createContext<Record<string, string>>({});
+
+function fieldKey(id: string): string {
+  if (id.startsWith("sig-name")) return "fullName";
+  if (id === "sig-job") return "jobTitle";
+  return id.replace(/^sig-/, "");
+}
 
 export interface InlineFieldProps {
   id: string;
@@ -32,6 +40,8 @@ export function InlineField({
   const ref = useRef<HTMLInputElement>(null);
   const measuredWidthRef = useRef(minWidth);
   const [measuredWidth, setMeasuredWidth] = useState(minWidth);
+  const field = fieldKey(id);
+  const error = useContext(FieldErrorsContext)[field];
 
   useEffect(() => {
     if (autoFocus) ref.current?.focus();
@@ -67,7 +77,7 @@ export function InlineField({
       // Canvas measureText ignores CSS letter-spacing — without this, tracked
       // uppercase fields (e.g. the Underline job title) clip their last character.
       const letterSpacing = Number.parseFloat(styles.letterSpacing) || 0;
-      const trackingWidth = letterSpacing > 0 ? letterSpacing * text.length : 0;
+      const trackingWidth = letterSpacing * Array.from(text).length;
       const nextWidth = Math.ceil(context.measureText(text).width + trackingWidth + horizontalPadding + 6);
       const clampedWidth = Math.max(minWidth, nextWidth);
 
@@ -89,6 +99,9 @@ export function InlineField({
     <input
       ref={ref}
       id={id}
+      aria-label={label}
+      aria-invalid={Boolean(error)}
+      aria-describedby={error ? `validation-${field}` : undefined}
       type="text"
       className={`inline-field ${className ?? ""}`}
       value={value}

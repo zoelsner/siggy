@@ -29,6 +29,17 @@ async function resolveAccess() {
 }
 
 describe("purchase access with unavailable browser storage", () => {
+  it("explains mailbox recovery for an old verified checkout without granting access", async () => {
+    window.location.search = "?session_id=cs_test_old_fixture";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ valid: false, restoreRequired: true })));
+    expect(await resolveAccess()).toMatchObject({ unlocked: false, token: null, error: "restore_required" });
+  });
+  it.each(["server", "network"])("preserves saved purchase proof during a %s outage", async kind => {
+    vi.stubGlobal("localStorage", { getItem: () => "saved-proof", removeItem: vi.fn() });
+    vi.stubGlobal("fetch", kind === "server" ? vi.fn().mockResolvedValue(new Response(null, { status: 503 })) : vi.fn().mockRejectedValue(new TypeError("Offline")));
+    expect(await resolveAccess()).toMatchObject({ unlocked: false, error: "verification_unavailable" });
+    expect(localStorage.removeItem).not.toHaveBeenCalled();
+  });
   it.each(["session_id", "access_token"])("keeps verified %s access in memory and cleans its URL when saving fails", async (parameter) => {
     window.location.search = `?${parameter}=verified-value&utm_source=test`;
     vi.stubGlobal("localStorage", { setItem: () => { throw new DOMException("Denied", "SecurityError"); } });

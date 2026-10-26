@@ -13,6 +13,7 @@ export function Hero({
   accent,
   onNameChange,
   onAccentChange,
+  draftSaved = null,
   eyebrow = "The 30-second signature",
   headline = (
     <>
@@ -22,7 +23,7 @@ export function Hero({
   subtitle = (
     <>
       Try it right here — no account, no email, no &ldquo;free 14-day trial.&rdquo;
-      Copy the HTML when it looks right and paste into Gmail.
+      Open the free editor to finish your signature, then copy it into Gmail.
     </>
   ),
   title = "Head of Design",
@@ -33,6 +34,7 @@ export function Hero({
   accent: string;
   onNameChange: (value: string) => void;
   onAccentChange: (color: string) => void;
+  draftSaved?: boolean | null;
   eyebrow?: React.ReactNode;
   headline?: React.ReactNode;
   subtitle?: React.ReactNode;
@@ -120,8 +122,10 @@ export function Hero({
               </div>
             </div>
             <div className="hero-mini-footer">
-              <span className="hero-mini-footer__status">Auto-saved · ready to copy</span>
-              <span className="hero-mini-footer__copy">Copy HTML</span>
+              <span className="hero-mini-footer__status" role="status">
+                {draftSaved === false ? "Draft not saved · keep this tab open" : draftSaved ? "Draft saved in this browser" : "Try your name and color"}
+              </span>
+              <a className="hero-mini-footer__copy" href="/editor">Open free editor</a>
             </div>
           </div>
           <span className="hero-card-stack__sticker">← edit me, it&rsquo;s live</span>
