@@ -18,6 +18,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("RESEND_API_KEY", "offline-test-key");
   vi.stubEnv("STRIPE_SECRET_KEY", "offline-test-key");
+  vi.stubEnv("STRIPE_PRICE_ID", "price_offline_fixture");
   vi.stubEnv("SIGGY_TOKEN_SECRET", "offline-recovery-flow-secret");
   vi.stubGlobal("fetch", delivery);
   delivery.mockResolvedValue(new Response(JSON.stringify({ id: "offline-message" }), { status: 200 }));

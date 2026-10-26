@@ -100,6 +100,19 @@ test("render errors clear stale green status and pause exports", async ({ page }
   await expect(page.getByRole("button", { name: "Copy signature", exact: true })).toBeDisabled();
 });
 
+test("older verified checkout offers email recovery without another purchase", async ({ page }) => {
+  await page.route("**/api/billing/verify-session", route => route.fulfill({ json: { valid: false, restoreRequired: true } }));
+  await page.goto("/editor?session_id=cs_test_old_fixture");
+  await expect(page.locator(".builder-banner[role=alert]")).toContainText("Your Siggy payment is confirmed");
+  await expect(page.getByRole("link", { name: "Restore access", exact: true })).toHaveAttribute("href", "/restore");
+  await expect(page.locator(".sig-editor__watermark")).toBeVisible();
+});
+
+test("unused image optimizer rejects even a normal local image request", async ({ request }) => {
+  const response = await request.get("/_next/image?url=%2Fsarah-avatar.png&w=128&q=75");
+  expect(response.status()).toBe(404);
+});
+
 test("exported system-font Bold HTML wraps a long unbroken name within its table", async ({ page, request }) => {
   const response = await request.post("/api/render", { data: { document: { ...createDefaultDocument(), fontFamily: "arial", fullName: "W".repeat(70) } } });
   expect(response.ok()).toBe(true);

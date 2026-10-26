@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 const STORAGE_KEY = "siggy_access";
 
-export type AccessError = "checkout_failed" | "redeem_failed" | "verification_unavailable" | null;
+export type AccessError = "checkout_failed" | "redeem_failed" | "restore_required" | "verification_unavailable" | null;
 
 async function verifyToken(token: string): Promise<boolean | null> {
   try {
@@ -22,7 +22,7 @@ async function verifyToken(token: string): Promise<boolean | null> {
   }
 }
 
-async function redeemSession(sessionId: string): Promise<string | null> {
+async function redeemSession(sessionId: string): Promise<{ token?: string; restoreRequired?: boolean } | null> {
   try {
     const res = await fetch("/api/billing/verify-session", {
       method: "POST",
@@ -30,8 +30,8 @@ async function redeemSession(sessionId: string): Promise<string | null> {
       body: JSON.stringify({ sessionId }),
     });
     if (!res.ok) return null;
-    const data = (await res.json()) as { token?: string };
-    return data.token ?? null;
+    const data = (await res.json()) as { token?: string; restoreRequired?: boolean };
+    return typeof data.token === "string" ? { token: data.token } : data.restoreRequired === true ? { restoreRequired: true } : null;
   } catch {
     return null;
   }
@@ -70,16 +70,16 @@ export function useAccess() {
       if (sessionId) {
         const redeemed = await redeemSession(sessionId);
         if (cancelled) return;
-        if (redeemed) {
-          setAccessSaveFailed(!storeAndCleanUrl(redeemed, params));
-          setToken(redeemed);
+        if (redeemed?.token) {
+          setAccessSaveFailed(!storeAndCleanUrl(redeemed.token, params));
+          setToken(redeemed.token);
           setUnlocked(true);
           setResolved(true);
           return;
         }
         // A checkout return could not be verified. Do not claim the payment
         // succeeded until the server has confirmed it.
-        setError("redeem_failed");
+        setError(redeemed?.restoreRequired ? "restore_required" : "redeem_failed");
       }
 
       // 2. Check for ?access_token=... from a restore/receipt email link.
@@ -110,6 +110,7 @@ export function useAccess() {
         if (valid === true) {
           setToken(stored);
           setUnlocked(true);
+          setError(null);
         } else if (valid === false) {
           try {
             localStorage.removeItem(STORAGE_KEY);

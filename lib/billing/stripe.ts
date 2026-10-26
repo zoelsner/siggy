@@ -25,8 +25,8 @@ function getBaseUrl(): string {
 }
 
 // A paid Stripe session stays paid forever, so its session_id can be replayed
-// indefinitely to mint new tokens. Bound the abuse window to recent payments —
-// legitimate redemption happens within seconds of the redirect.
+// indefinitely to mint new tokens. Bound direct redemption to recent sessions;
+// older verified purchases recover through their purchase mailbox instead.
 const MAX_SESSION_AGE_MS = 60 * 60 * 1000; // 1 hour
 
 export type CheckoutSource = "editor" | "landing";
@@ -60,15 +60,14 @@ export function constructWebhookEvent(payload: string, signature: string): Strip
 }
 
 export async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
-  if (session.mode !== "payment") return;
-
-  if (session.payment_status !== "paid") {
+  if (session.mode !== "payment" || session.payment_status !== "paid") {
     console.warn("[billing/webhook] checkout completed without paid status", {
       sessionId: session.id,
       paymentStatus: session.payment_status,
     });
     return;
   }
+  if (!(await isEligibleSiggySession(session))) return;
 
   // Siggy is intentionally accountless. The paid session is redeemed into a
   // local HMAC access token when Stripe redirects the customer back to /editor.
@@ -97,18 +96,55 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session):
   }
 }
 
-export async function isSessionPaid(sessionId: string): Promise<boolean> {
-  if (!sessionId.startsWith("cs_")) return false;
-  try {
-    const session = await client().checkout.sessions.retrieve(sessionId);
-    if (session.payment_status !== "paid") return false;
-    if (typeof session.created !== "number") return false;
-    const ageMs = Date.now() - session.created * 1000;
-    if (ageMs < 0 || ageMs > MAX_SESSION_AGE_MS) return false;
-    return true;
-  } catch {
-    return false;
+function configuredIds(name: "SIGGY_LEGACY_PRICE_IDS" | "SIGGY_LEGACY_PRODUCT_IDS", prefix: string): Set<string> {
+  const ids = (process.env[name] ?? "").split(",").map(id => id.trim()).filter(Boolean);
+  if (ids.some(id => !id.startsWith(prefix))) throw new Error(`Invalid ${name} configuration`);
+  return new Set(ids);
+}
+
+// A paid flag or session metadata alone is not proof of buying this product.
+// Price identity is authoritative. Looking up the current price's product also
+// preserves older prices on that same product, without hardcoding an amount.
+export async function isEligibleSiggySession(session: Stripe.Checkout.Session): Promise<boolean> {
+  if (session.mode !== "payment" || session.payment_status !== "paid" || session.status !== "complete") return false;
+  const currentPrice = process.env.STRIPE_PRICE_ID;
+  if (!currentPrice?.startsWith("price_")) throw new Error("STRIPE_PRICE_ID not configured");
+  const approvedPrices = configuredIds("SIGGY_LEGACY_PRICE_IDS", "price_");
+  approvedPrices.add(currentPrice);
+  const approvedProducts = configuredIds("SIGGY_LEGACY_PRODUCT_IDS", "prod_");
+  let currentProduct: string | undefined;
+  for await (const item of client().checkout.sessions.listLineItems(session.id, { limit: 100 })) {
+    const price = item.price;
+    if (!price || !item.quantity || item.quantity < 1) continue;
+    if (approvedPrices.has(price.id)) return true;
+    const product = typeof price.product === "string" ? price.product : price.product?.id;
+    if (!product) continue;
+    if (approvedProducts.has(product)) return true;
+    if (!currentProduct) {
+      const canonical = await client().prices.retrieve(currentPrice);
+      currentProduct = typeof canonical.product === "string" ? canonical.product : canonical.product?.id;
+      if (!currentProduct) throw new Error("Configured Siggy price has no product");
+    }
+    if (product === currentProduct) return true;
   }
+  return false;
+}
+
+export async function getSessionRedemptionStatus(sessionId: string): Promise<"ready" | "restore_required" | "invalid"> {
+  if (!sessionId.startsWith("cs_")) return "invalid";
+  const session = await client().checkout.sessions.retrieve(sessionId);
+  if (!(await isEligibleSiggySession(session))) return "invalid";
+  if (typeof session.created !== "number") return "invalid";
+  const ageMs = Date.now() - session.created * 1000;
+  if (ageMs < 0) return "invalid";
+  // Keep replay protection. Older verified purchases recover through the
+  // purchase mailbox instead of being told their payment could not be verified.
+  return ageMs > MAX_SESSION_AGE_MS ? "restore_required" : "ready";
+}
+
+export async function isSessionPaid(sessionId: string): Promise<boolean> {
+  try { return await getSessionRedemptionStatus(sessionId) === "ready"; }
+  catch { return false; }
 }
 
 // Restore-by-email has no time window — it's a lifetime product, so a
@@ -123,7 +159,7 @@ export async function findPaidSessionByEmail(email: string): Promise<boolean> {
       limit: 100,
     });
     for await (const session of sessions) {
-      if (session.payment_status === "paid") return true;
+      if (await isEligibleSiggySession(session)) return true;
     }
     return false;
   } catch {

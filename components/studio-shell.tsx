@@ -411,6 +411,11 @@ export function StudioShell() {
           we&apos;ll help you recover access.
         </div>
       ) : null}
+      {error === "restore_required" ? (
+        <div className="builder-banner builder-banner--error" role="alert">
+          Your Siggy payment is confirmed. This checkout link is too old to unlock directly. <a href="/restore">Restore access</a> using your purchase email for a fresh access link.
+        </div>
+      ) : null}
       {error === "checkout_failed" ? (
         <div className="builder-banner builder-banner--error" role="alert">
           Couldn&apos;t open checkout. Try again, or email{" "}

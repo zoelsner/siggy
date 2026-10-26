@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
   // This check is identical for every valid email, before any purchase lookup.
   // Do not imply a link was sent when the service cannot send one at all.
-  if (!process.env.RESEND_API_KEY || !process.env.STRIPE_SECRET_KEY || !process.env.SIGGY_TOKEN_SECRET) {
+  if (!process.env.RESEND_API_KEY || !process.env.STRIPE_SECRET_KEY || !process.env.SIGGY_TOKEN_SECRET || !process.env.STRIPE_PRICE_ID) {
     return NextResponse.json({ error: "restore_unavailable" }, { status: 503 });
   }
 

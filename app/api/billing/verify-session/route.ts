@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { isSessionPaid } from "@/lib/billing/stripe";
+import { getSessionRedemptionStatus } from "@/lib/billing/stripe";
 import { signAccessToken } from "@/lib/billing/token";
 
 export async function POST(request: Request) {
@@ -12,8 +12,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const paid = await isSessionPaid(sessionId);
-    if (!paid) return NextResponse.json({ valid: false });
+    const status = await getSessionRedemptionStatus(sessionId);
+    if (status === "restore_required") return NextResponse.json({ valid: false, restoreRequired: true });
+    if (status !== "ready") return NextResponse.json({ valid: false });
 
     const token = await signAccessToken(sessionId);
     return NextResponse.json({ valid: true, token });
