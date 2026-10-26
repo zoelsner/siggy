@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { parse } from "@shuding/opentype.js";
 import { getNamePresentation, renderNameImageContent } from "./template-name";
 import type { TemplateId } from "./types";
+import { characterCount, MAX_NAME_CODE_UNITS, COMPLEX_NAME_MESSAGE } from "./validation";
 
 export class UnsupportedNameGlyphsError extends Error {}
 export class NameImageSizeError extends Error {}
@@ -22,6 +23,7 @@ export async function renderNameImage(
   accentColor: string,
   font: { name: string; data: ArrayBuffer; weight: number },
 ) {
+  if (name.length > MAX_NAME_CODE_UNITS) throw new NameImageSizeError(COMPLEX_NAME_MESSAGE);
   const p = getNamePresentation(templateId, name, accentColor);
   const parsed = parse(font.data);
   const displayed = `${p.first} ${p.last}`;
@@ -31,8 +33,9 @@ export async function renderNameImage(
   const scale = 2;
   // A generous scratch canvas avoids guessed per-character widths clipping
   // wide glyphs. Trim transparent pixels after rasterizing to fit the name.
-  const width = Math.ceil(Math.max(p.first.length, p.last.length, 1) * p.fontSize * scale * 2 + 64);
+  const width = Math.ceil(Math.max(characterCount(p.first), characterCount(p.last), 1) * p.fontSize * scale * 2 + 64);
   const height = Math.ceil((p.fontSize * p.lines * 1.5 + 32) * scale);
+  if (width > 16_384 || height > 512) throw new NameImageSizeError("This name is too wide for an email signature. Shorten it before exporting.");
   const svg = await satori(<div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>{renderNameImageContent(templateId, name, accentColor, font.name, scale)}</div>, {
     width,
     height,

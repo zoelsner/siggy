@@ -39,6 +39,11 @@ describe("template-specific exported names", () => {
     await expect(renderNameImage("clean", "李 明", accent, font)).rejects.toBeInstanceOf(UnsupportedNameGlyphsError);
     await expect(renderNameImage("bold", "W".repeat(70), accent, font)).rejects.toBeInstanceOf(NameImageSizeError);
   });
+  it("rejects raw name complexity before parsing a font or allocating a raster", async () => {
+    await expect(renderNameImage("edge", "a" + "\u0301".repeat(10_000), accent, {
+      name: "unread fixture", data: new ArrayBuffer(0), weight: 400,
+    })).rejects.toThrow("too complex");
+  });
   it.each([ ["bold", 38, 900, 2], ["edge", 26, 800, 1], ["card", 24, 800, 1], ["clean", 20, 800, 1] ] as const)("preserves %s typography", (id, size, weight, lines) => {
     const p = getNamePresentation(id, "Alex Morgan", accent);
     expect(p).toMatchObject({ fontSize: size, fontWeight: weight, lines });

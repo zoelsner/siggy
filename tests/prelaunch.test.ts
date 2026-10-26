@@ -4,7 +4,7 @@ import { createDefaultDocument } from "@/lib/default-document";
 import { coerceSignatureDocument, normalizeSignatureForOutput, resolveUrlForHtml } from "@/lib/document";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
 import { prepareSignatureOutput } from "@/lib/prepare-signature-output";
-import { characterCount, validateSignatureDocument } from "@/lib/validation";
+import { characterCount, validateSignatureDocument, safeWebUrl } from "@/lib/validation";
 import { renderSignature } from "@/lib/render";
 import { POST as render } from "@/app/api/render/route";
 import { POST as verifyToken } from "@/app/api/billing/verify-token/route";
@@ -24,9 +24,30 @@ describe("prelaunch input and export regression coverage", () => {
     expect(issues.map(issue => issue.field)).toEqual(expect.arrayContaining(["fullName", "jobTitle", "company", "email", "website"]));
     expect(issues.find(issue => issue.field === "fullName")?.message).toContain("80 characters");
   });
-  it.each(["javascript:alert(1)", "https://", "https://example .com", "ftp://example.com", "https://user:password@example.com"])("rejects invalid contact destinations: %s", website => {
+  it.each(["javascript:alert(1)", "https://", "https:example.com", "https:/example.com", "https://example .com", "ftp://example.com", "https://user:password@example.com"])("rejects invalid contact destinations: %s", website => {
     expect(resolveUrlForHtml(website)).toBe("");
     expect(validateSignatureDocument({ ...createDefaultDocument(), website })).toEqual(expect.arrayContaining([expect.objectContaining({ field: "website", severity: "error" })]));
+  });
+  it.each(["https:example.com", "https:/example.com"])("rejects malformed website, CTA and social scheme spelling: %s", async destination => {
+    const doc = { ...createDefaultDocument(), website: destination,
+      cta: { text: "Book a call", url: destination },
+      socials: [{ id: "x", platform: "x" as const, url: destination }],
+    };
+    expect(validateSignatureDocument(doc).map(issue => issue.field)).toEqual(expect.arrayContaining(["website", "cta-url", "social-x"]));
+    const result = await renderSignature(doc);
+    expect(result.html).not.toContain(`href="${destination}"`);
+    expect(result.html).not.toContain("BOOK A CALL");
+    expect(result.plainText).not.toContain(`x: ${destination}`);
+  });
+  it("returns canonical absolute website, CTA and social destinations without changing query semantics", async () => {
+    const destination = "HTTPS://EXAMPLE.COM:443?x=a%2Bb&dup=1&dup=2#section";
+    const canonical = "https://example.com/?x=a%2Bb&dup=1&dup=2#section";
+    expect(safeWebUrl(destination)).toBe(canonical);
+    const result = await renderSignature({ ...createDefaultDocument(), website: destination,
+      cta: { text: "Book a call", url: destination }, socials: [{ id: "x", platform: "x", url: destination }],
+    });
+    expect(result.html.match(/href="https:\/\/example\.com\/\?x=a%2Bb&amp;dup=1&amp;dup=2#section"/g)).toHaveLength(3);
+    expect(result.plainText).toContain(`Book a call: ${canonical}`);
   });
   it("accepts plus addresses, bare domains, social handles, and query parameters", () => {
     const doc = { ...createDefaultDocument(), email: "alex+work@example.com", website: "example.com/?a=1&b=2", socials: [

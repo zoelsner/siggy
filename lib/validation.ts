@@ -5,6 +5,11 @@ export const FIELD_LIMITS = {
   website: 160, social: 160, ctaText: 60, ctaUrl: 160,
 } as const;
 
+// A grapheme may contain arbitrarily many combining code points. Keep a
+// separate raw complexity bound before segmentation, font fetches or raster work.
+export const MAX_NAME_CODE_UNITS = 320;
+export const COMPLEX_NAME_MESSAGE = "This name is too complex to export. Shorten it or remove repeated accents. Your draft is kept in full.";
+
 export type ValidationIssue = RenderWarning & { field: string };
 
 export function normalizeOutputText(value: string): string {
@@ -24,10 +29,10 @@ export function safeWebUrl(value: string, origin?: string): string {
   try {
     const relative = raw.startsWith("/") && origin;
     const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(raw);
+    if (hasScheme && !/^https?:\/\//i.test(raw)) return "";
     const candidate = relative ? new URL(raw, origin) : new URL(hasScheme ? raw : `https://${raw.replace(/^\/+/, "")}`);
     if (!["http:", "https:"].includes(candidate.protocol) || !candidate.hostname || candidate.username || candidate.password) return "";
-    // Preserve intentional URL spelling/query parameters; normalize only a bare domain.
-    return relative ? candidate.toString() : hasScheme ? raw : `https://${raw.replace(/^\/+/, "")}`;
+    return candidate.toString();
   } catch {
     return "";
   }
@@ -41,7 +46,9 @@ export function validateSignatureDocument(document: SignatureDocument): Validati
   const issues: ValidationIssue[] = [];
   const error = (field: string, code: string, message: string) => issues.push({ field, code, severity: "error", message });
   const labels: Record<string, string> = { fullName: "Full name", jobTitle: "Title", company: "Company", email: "Email", phone: "Phone", website: "Website" };
+  if (document.fullName.length > MAX_NAME_CODE_UNITS) error("fullName", "name-too-complex", COMPLEX_NAME_MESSAGE);
   for (const field of ["fullName", "jobTitle", "company", "email", "phone", "website"] as const) {
+    if (field === "fullName" && document.fullName.length > MAX_NAME_CODE_UNITS) continue;
     if (characterCount(normalizeOutputText(document[field])) > FIELD_LIMITS[field]) {
       error(field, `${field}-too-long`, `${labels[field]} must be ${FIELD_LIMITS[field]} characters or fewer. Your draft is kept in full.`);
     }

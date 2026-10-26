@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { createDefaultDocument } from "../../lib/default-document";
 
 test.beforeEach(async ({ page }) => {
   await page.route("https://**/*", route => route.abort());
@@ -97,6 +98,20 @@ test("render errors clear stale green status and pause exports", async ({ page }
   await expect(page.locator(".preview-status")).toContainText("Couldn't check this signature");
   await expect(page.locator(".preview-status")).not.toContainText("Checks passed");
   await expect(page.getByRole("button", { name: "Copy signature", exact: true })).toBeDisabled();
+});
+
+test("exported system-font Bold HTML wraps a long unbroken name within its table", async ({ page, request }) => {
+  const response = await request.post("/api/render", { data: { document: { ...createDefaultDocument(), fontFamily: "arial", fullName: "W".repeat(70) } } });
+  expect(response.ok()).toBe(true);
+  const output = await response.json();
+  await page.setContent(`<main style="width:600px">${output.html}</main>`);
+  const dimensions = await page.evaluate(() => ({ table: document.querySelector('table[role="presentation"]')!.getBoundingClientRect().width,
+    content: document.querySelector("main")!.scrollWidth,
+  }));
+  expect(dimensions.table).toBeLessThanOrEqual(520);
+  expect(dimensions.content).toBeLessThanOrEqual(600);
+  await expect(page.locator('table[role="presentation"] span').first()).toHaveText("W".repeat(70));
+  await page.screenshot({ path: "test-results/system-font-bold-export.png", fullPage: true });
 });
 
 for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {

@@ -29,7 +29,7 @@ describe("coerceSignatureDocument", () => {
     expect(resolveUrlForHtml("/api/assets/123", "https://siggy.example")).toBe(
       "https://siggy.example/api/assets/123"
     );
-    expect(resolveUrlForHtml("meridian.design")).toBe("https://meridian.design");
+    expect(resolveUrlForHtml("meridian.design")).toBe("https://meridian.design/");
   });
 });
 

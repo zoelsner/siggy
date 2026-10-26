@@ -5,7 +5,7 @@ import { verifyAccessToken } from "@/lib/billing/token";
 import { fetchFontData, isSystemFont } from "@/lib/fonts";
 import { getNamePresentation } from "@/lib/template-name";
 import { nameFontWeight, renderNameImage, UnsupportedNameGlyphsError, NameImageSizeError } from "@/lib/render-name-image";
-import { characterCount, FIELD_LIMITS, normalizeOutputText } from "@/lib/validation";
+import { characterCount, FIELD_LIMITS, MAX_NAME_CODE_UNITS, COMPLEX_NAME_MESSAGE, normalizeOutputText } from "@/lib/validation";
 import type { TemplateId } from "@/lib/types";
 import { saveAsset } from "@/lib/runtime";
 
@@ -21,6 +21,9 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as RenderNameRequest | null;
   if (!body || typeof body !== "object") return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   const { name, fontFamily, accentColor = "#4f46e5", templateId = "clean", token } = body;
+  if (typeof name === "string" && name.length > MAX_NAME_CODE_UNITS) {
+    return NextResponse.json({ error: COMPLEX_NAME_MESSAGE }, { status: 400 });
+  }
 
   // When pro fonts are gated, reject unauthenticated calls instead of
   // trusting the client UI — every render here uploads a blob.
