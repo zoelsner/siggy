@@ -9,6 +9,7 @@ import { LandingNav } from "@/components/landing/nav";
 import { Pricing } from "@/components/landing/pricing";
 import { ProfessionSections } from "@/components/landing/profession-sections";
 import { Templates } from "@/components/landing/templates";
+import { trackEvent } from "@/lib/analytics";
 import { createDefaultDocument } from "@/lib/default-document";
 import { createBrowserDraftAdapter } from "@/lib/persistence";
 import type { Profession } from "@/lib/professions";
@@ -21,7 +22,7 @@ function persistDraft(patch: Partial<SignatureDocument>) {
   return draftAdapter.save({ ...doc, ...patch });
 }
 
-export function LandingPage({ profession }: { profession?: Profession }) {
+export function LandingPage({ profession, variant = "home" }: { profession?: Profession; variant?: string }) {
   const [name, setName] = useState(profession?.exampleName ?? "Sarah Chen");
   const [accent, setAccent] = useState(profession?.accent ?? "#4f46e5");
   const [draftSaved, setDraftSaved] = useState<boolean | null>(null);
@@ -34,6 +35,10 @@ export function LandingPage({ profession }: { profession?: Profession }) {
       setDraftSaved(true);
     }
   }, []);
+
+  useEffect(() => {
+    trackEvent("landing_view", { variant });
+  }, [variant]);
 
   const persona = profession
     ? { title: profession.exampleTitle, company: profession.exampleCompany, email: profession.exampleEmail }

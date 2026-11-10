@@ -68,7 +68,7 @@ export function Pricing() {
               <button
                 className="button button--primary button--large pricing-receipt-col__cta"
                 onClick={() => {
-                  trackEvent("unlock_click", { source: "pricing" });
+                  trackEvent("checkout_started", { source: "pricing" });
                   void startCheckout();
                 }}
                 type="button"

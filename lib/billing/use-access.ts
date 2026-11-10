@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { getAttribution } from "@/lib/attribution";
+import { trackEvent } from "@/lib/analytics";
+
 
 const STORAGE_KEY = "siggy_access";
 
@@ -72,6 +75,7 @@ export function useAccess() {
         if (cancelled) return;
         if (redeemed?.token) {
           setAccessSaveFailed(!storeAndCleanUrl(redeemed.token, params));
+          trackEvent("purchase_completed", { value: 19, currency: "usd" });
           setToken(redeemed.token);
           setUnlocked(true);
           setResolved(true);
@@ -136,7 +140,7 @@ export function useAccess() {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source }),
+        body: JSON.stringify({ source, attribution: getAttribution() ?? undefined }),
       });
       if (!res.ok) {
         setError("checkout_failed");

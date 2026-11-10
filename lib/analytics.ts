@@ -25,6 +25,35 @@ export function getSessionId(): string {
   }
 }
 
+function forwardToPixels(event: string) {
+  const fbq = (window as unknown as { fbq?: (...args: unknown[]) => void }).fbq;
+  if (typeof fbq === "function") {
+    if (event === "signature_copied") {
+      fbq("track", "Lead");
+    } else if (event === "checkout_started") {
+      fbq("track", "InitiateCheckout");
+    } else if (event === "purchase_completed") {
+      fbq("track", "Purchase", { value: 19, currency: "USD" });
+    }
+  }
+
+  const gtag = (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag;
+  const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
+  if (typeof gtag === "function" && googleAdsId) {
+    if (event === "signature_copied" && process.env.NEXT_PUBLIC_GOOGLE_ADS_LABEL_COPY) {
+      gtag("event", "conversion", {
+        send_to: `${googleAdsId}/${process.env.NEXT_PUBLIC_GOOGLE_ADS_LABEL_COPY}`
+      });
+    } else if (event === "purchase_completed" && process.env.NEXT_PUBLIC_GOOGLE_ADS_LABEL_PURCHASE) {
+      gtag("event", "conversion", {
+        send_to: `${googleAdsId}/${process.env.NEXT_PUBLIC_GOOGLE_ADS_LABEL_PURCHASE}`,
+        value: 19,
+        currency: "USD"
+      });
+    }
+  }
+}
+
 export function trackEvent(event: string, context?: AnalyticsEvent["context"]) {
   if (typeof window === "undefined") {
     return;
@@ -36,6 +65,8 @@ export function trackEvent(event: string, context?: AnalyticsEvent["context"]) {
   } else {
     track(event);
   }
+
+  forwardToPixels(event);
 
   // Also forward to our existing /api/events pipeline (writes to Blob)
   const payload: AnalyticsEvent = {

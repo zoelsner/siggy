@@ -152,7 +152,7 @@ export function StudioShell() {
       setDocument({ ...stored, nameImage: null });
     }
 
-    trackEvent("landing_viewed", {
+    trackEvent("editor_opened", {
       publicSupport: "gmail_web",
       auth: "deferred"
     });
@@ -230,7 +230,7 @@ export function StudioShell() {
   }
 
   function handleUnlock(source: string) {
-    trackEvent("unlock_click", { source });
+    trackEvent("checkout_started", { source });
     void startCheckout("editor");
   }
 
@@ -281,7 +281,7 @@ export function StudioShell() {
 
       setCopyLabel("Copied!");
       setInstallOpen(true);
-      trackEvent("copy_clicked", { charCount: result.sizeBudget.charCount });
+      trackEvent("signature_copied", { charCount: result.sizeBudget.charCount });
       window.setTimeout(() => setCopyLabel("Copy signature"), 1600);
     } catch (error) {
       setOutputError(error instanceof Error && !/^(name_render_failed|render_failed|clipboard_denied)$/.test(error.message)

@@ -31,7 +31,10 @@ const MAX_SESSION_AGE_MS = 60 * 60 * 1000; // 1 hour
 
 export type CheckoutSource = "editor" | "landing";
 
-export async function createCheckoutSession(source: CheckoutSource = "landing"): Promise<{ url: string }> {
+export async function createCheckoutSession(
+  source: CheckoutSource = "landing",
+  attribution?: Record<string, string>
+): Promise<{ url: string }> {
   const priceId = process.env.STRIPE_PRICE_ID;
   if (!priceId) throw new Error("STRIPE_PRICE_ID not configured");
 
@@ -46,6 +49,7 @@ export async function createCheckoutSession(source: CheckoutSource = "landing"):
     metadata: {
       product: "siggy_lifetime_access",
       source,
+      ...attribution,
     },
   });
 
