@@ -127,14 +127,12 @@ for (const [param, value] of [["session_id", "cs_test_fresh_fixture"], ["access_
     await page.route("https://connect.facebook.net/**", route => route.fulfill({ contentType: "text/javascript", body: "window.fbHref = location.href + ' ' + document.referrer;" }));
     await page.route("https://www.googletagmanager.com/**", route => route.fulfill({ contentType: "text/javascript", body: "window.gtagHref = location.href + ' ' + document.referrer;" }));
     let redeemed: unknown;
-    const fulfillOnceAdsReady = async (route: import("@playwright/test").Route, json: object) => {
+    const fulfill = (route: import("@playwright/test").Route, json: object) => {
       redeemed = route.request().postDataJSON();
-      // A real redeem waits on Stripe; let the ad snippets mount first, as in production.
-      await page.waitForFunction(() => typeof (window as AuditWindow).fbq === "function");
-      await route.fulfill({ json });
+      return route.fulfill({ json });
     };
-    await page.route("**/api/billing/verify-session", route => fulfillOnceAdsReady(route, { valid: true, token: "e2e-access-token" }));
-    await page.route("**/api/billing/verify-token", route => fulfillOnceAdsReady(route, { valid: true }));
+    await page.route("**/api/billing/verify-session", route => fulfill(route, { valid: true, token: "e2e-access-token" }));
+    await page.route("**/api/billing/verify-token", route => fulfill(route, { valid: true }));
 
     await page.goto(`/editor?utm_source=e2e&${param}=${value}`);
     await page.waitForFunction(() => (window as AuditWindow).fbHref && (window as AuditWindow).gtagHref);

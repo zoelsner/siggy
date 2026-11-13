@@ -36,7 +36,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Must stay the first script: removes purchase credentials from the URL before anything else can read it. */}
+        {/* Keep first in <head>: a parser-blocking inline script that removes purchase credentials from the URL
+            before hydration or any third-party script (see lib/billing/access-params.ts). */}
         <script dangerouslySetInnerHTML={{ __html: SCRUB_ACCESS_PARAMS_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
