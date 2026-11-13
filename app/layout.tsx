@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 
 import { MarketingScripts } from "@/components/marketing-scripts";
+import { SCRUB_ACCESS_PARAMS_SCRIPT } from "@/lib/billing/access-params";
 
 import "./globals.css";
 
@@ -35,6 +36,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Must stay the first script: removes purchase credentials from the URL before anything else can read it. */}
+        <script dangerouslySetInnerHTML={{ __html: SCRUB_ACCESS_PARAMS_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

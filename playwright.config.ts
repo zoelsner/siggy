@@ -28,6 +28,8 @@ export default defineConfig({
       SIGGY_TOKEN_SECRET: "playwright-local-fixture-only",
       STRIPE_SECRET_KEY: "", STRIPE_PRICE_ID: "", STRIPE_WEBHOOK_SECRET: "",
       RESEND_API_KEY: "", BLOB_READ_WRITE_TOKEN: "",
+      // Dummy ids so e2e exercises the ad scripts; specs stub or block their hosts.
+      NEXT_PUBLIC_META_PIXEL_ID: "e2e-pixel", NEXT_PUBLIC_GOOGLE_ADS_ID: "AW-E2E",
     },
     command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
     url: "http://127.0.0.1:3100/editor",

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { getAttribution } from "@/lib/attribution";
 import { trackEvent } from "@/lib/analytics";
+import { clearPendingAccess, readPendingAccess } from "@/lib/billing/access-params";
 
 
 const STORAGE_KEY = "siggy_access";
@@ -48,6 +49,7 @@ function storeAndCleanUrl(token: string, params: URLSearchParams): boolean {
   } catch {
     // Verified access can still be used in memory for this page session.
   }
+  clearPendingAccess();
   // Never use the URL as a storage fallback for purchase credentials.
   params.delete("session_id");
   params.delete("access_token");
@@ -67,9 +69,13 @@ export function useAccess() {
     let cancelled = false;
 
     async function resolve() {
-      // 1. Check for ?session_id=... from Stripe success_url and redeem it.
+      // Purchase credentials were moved out of the URL by the inline head
+      // script (see access-params.ts); the URL is only a fallback.
       const params = new URLSearchParams(window.location.search);
-      const sessionId = params.get("session_id");
+      const pending = readPendingAccess(window.location.search);
+
+      // 1. Check for ?session_id=... from Stripe success_url and redeem it.
+      const sessionId = pending.session_id;
       if (sessionId) {
         const redeemed = await redeemSession(sessionId);
         if (cancelled) return;
@@ -87,7 +93,7 @@ export function useAccess() {
       }
 
       // 2. Check for ?access_token=... from a restore/receipt email link.
-      const accessToken = params.get("access_token");
+      const accessToken = pending.access_token;
       if (accessToken) {
         const valid = await verifyToken(accessToken);
         if (cancelled) return;

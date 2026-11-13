@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Script from "next/script";
 
 import { captureAttribution } from "@/lib/attribution";
+import { hasAccessParams } from "@/lib/billing/access-params";
 
 export function MarketingScripts() {
+  // Fail closed: ad scripts read location.href, so they never load while a
+  // purchase credential is still in the URL (see lib/billing/access-params.ts).
+  const [urlIsClean, setUrlIsClean] = useState(false);
   useEffect(() => {
     captureAttribution();
+    setUrlIsClean(!hasAccessParams(window.location.search));
   }, []);
 
   const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
@@ -17,7 +22,7 @@ export function MarketingScripts() {
     <>
       {metaPixelId ? (
         <>
-          <Script id="meta-pixel" strategy="afterInteractive">
+          {urlIsClean ? <Script id="meta-pixel" strategy="afterInteractive">
             {`
               !function(f,b,e,v,n,t,s)
               {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -30,7 +35,7 @@ export function MarketingScripts() {
               fbq('init', '${metaPixelId}');
               fbq('track', 'PageView');
             `}
-          </Script>
+          </Script> : null}
           <noscript>
             <img
               height="1"
@@ -38,11 +43,12 @@ export function MarketingScripts() {
               style={{ display: "none" }}
               src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
               alt=""
+              referrerPolicy="no-referrer"
             />
           </noscript>
         </>
       ) : null}
-      {googleAdsId ? (
+      {googleAdsId && urlIsClean ? (
         <>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsId}`}

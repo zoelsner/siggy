@@ -11,6 +11,7 @@ vi.mock("react", () => ({
   useCallback: (callback: unknown) => callback,
 }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
+import { trackEvent } from "@/lib/analytics";
 import { useAccess } from "../lib/billing/use-access";
 
 let replaceState: ReturnType<typeof vi.fn>;
@@ -68,5 +69,18 @@ describe("purchase access with unavailable browser storage", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ valid: true })));
     expect(await resolveAccess()).toMatchObject({ unlocked: true, token: "verified-value", accessSaveFailed: false });
     expect(localStorage.setItem).toHaveBeenCalledWith("siggy_access", "verified-value");
+  });
+
+  it("redeems a checkout the head script already moved out of the URL", async () => {
+    (window as unknown as { __siggyPendingAccess?: unknown }).__siggyPendingAccess = { session_id: "cs_test_stashed" };
+    const sessionStorage = { getItem: vi.fn(), removeItem: vi.fn() };
+    vi.stubGlobal("sessionStorage", sessionStorage);
+    const fetch = vi.fn().mockResolvedValue(Response.json({ token: "verified-token" }));
+    vi.stubGlobal("fetch", fetch);
+    expect(await resolveAccess()).toMatchObject({ unlocked: true, token: "verified-token", error: null });
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ sessionId: "cs_test_stashed" });
+    expect(trackEvent).toHaveBeenCalledWith("purchase_completed", expect.anything());
+    expect((window as unknown as { __siggyPendingAccess?: unknown }).__siggyPendingAccess).toBeUndefined();
+    expect(sessionStorage.removeItem).toHaveBeenCalledWith("siggy_pending_access");
   });
 });

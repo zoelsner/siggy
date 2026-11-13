@@ -5,6 +5,11 @@ const tinyPng = Buffer.from(
   "base64",
 );
 
+// Never reach the real Meta/Google hosts from tests (playwright.config sets dummy ad ids).
+test.beforeEach(async ({ page }) => {
+  await page.route(/^https:\/\/(connect\.facebook\.net|www\.facebook\.com|www\.googletagmanager\.com)\//, route => route.abort());
+});
+
 async function openFreshEditor(page: import("@playwright/test").Page) {
   await page.addInitScript(() => window.localStorage.clear());
   await page.goto("/editor");
