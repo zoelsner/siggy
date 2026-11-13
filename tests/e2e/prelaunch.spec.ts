@@ -101,12 +101,57 @@ test("render errors clear stale green status and pause exports", async ({ page }
 });
 
 test("older verified checkout offers email recovery without another purchase", async ({ page }) => {
-  await page.route("**/api/billing/verify-session", route => route.fulfill({ json: { valid: false, restoreRequired: true } }));
+  let redeemed: unknown;
+  await page.route("**/api/billing/verify-session", route => {
+    redeemed = route.request().postDataJSON();
+    return route.fulfill({ json: { valid: false, restoreRequired: true } });
+  });
   await page.goto("/editor?session_id=cs_test_old_fixture");
   await expect(page.locator(".builder-banner[role=alert]")).toContainText("Your Siggy payment is confirmed");
   await expect(page.getByRole("link", { name: "Restore access", exact: true })).toHaveAttribute("href", "/restore");
   await expect(page.locator(".sig-editor__watermark")).toBeVisible();
+  // The credential is redeemed from the head-script stash even though a failed
+  // redeem never cleans the URL itself.
+  expect(redeemed).toEqual({ sessionId: "cs_test_old_fixture" });
+  expect(page.url()).not.toContain("cs_test_old_fixture");
 });
+
+// Ad scripts read location.href and document.referrer; purchase credentials
+// must be gone from both before either script runs.
+for (const [param, value] of [["session_id", "cs_test_fresh_fixture"], ["access_token", "e2e-access-token"]] as const) {
+  test(`${param} never reaches ad scripts and access still unlocks`, async ({ page }) => {
+    type AuditWindow = Window & { hrefAtParse?: string; fbHref?: string; gtagHref?: string; fbq?: { queue: unknown[][] } };
+    await page.addInitScript(() => {
+      document.addEventListener("DOMContentLoaded", () => { (window as AuditWindow).hrefAtParse = location.href; });
+    });
+    await page.route("https://connect.facebook.net/**", route => route.fulfill({ contentType: "text/javascript", body: "window.fbHref = location.href + ' ' + document.referrer;" }));
+    await page.route("https://www.googletagmanager.com/**", route => route.fulfill({ contentType: "text/javascript", body: "window.gtagHref = location.href + ' ' + document.referrer;" }));
+    let redeemed: unknown;
+    const fulfill = (route: import("@playwright/test").Route, json: object) => {
+      redeemed = route.request().postDataJSON();
+      return route.fulfill({ json });
+    };
+    await page.route("**/api/billing/verify-session", route => fulfill(route, { valid: true, token: "e2e-access-token" }));
+    await page.route("**/api/billing/verify-token", route => fulfill(route, { valid: true }));
+
+    await page.goto(`/editor?utm_source=e2e&${param}=${value}`);
+    await page.waitForFunction(() => (window as AuditWindow).fbHref && (window as AuditWindow).gtagHref);
+    await expect(page.locator(".sig-editor__watermark")).toHaveCount(0);
+
+    const audit = await page.evaluate(() => {
+      const w = window as AuditWindow;
+      return { hrefAtParse: w.hrefAtParse, fbHref: w.fbHref, gtagHref: w.gtagHref, queue: JSON.stringify(w.fbq?.queue) };
+    });
+    for (const seen of [audit.hrefAtParse, audit.fbHref, audit.gtagHref, page.url()]) {
+      expect(seen).not.toContain(value);
+      expect(seen).toContain("utm_source=e2e");
+    }
+    expect(redeemed).toEqual(param === "session_id" ? { sessionId: value } : { token: value });
+    if (param === "session_id") await expect.poll(() => page.evaluate(() => JSON.stringify((window as AuditWindow).fbq?.queue))).toContain("Purchase");
+    expect(audit.queue).toContain("PageView");
+    expect(await page.evaluate(() => sessionStorage.getItem("siggy_pending_access"))).toBeNull();
+  });
+}
 
 test("unused image optimizer rejects even a normal local image request", async ({ request }) => {
   const response = await request.get("/_next/image?url=%2Fsarah-avatar.png&w=128&q=75");

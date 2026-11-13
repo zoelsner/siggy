@@ -42,5 +42,5 @@ export default async function ProfessionPage({
   const profession = getProfession(slug);
   if (!profession) notFound();
 
-  return <LandingPage profession={profession} />;
+  return <LandingPage profession={profession} variant={profession.slug} />;
 }

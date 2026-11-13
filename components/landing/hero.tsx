@@ -59,7 +59,7 @@ export function Hero({
             <button
               className="button button--primary button--large"
               onClick={() => {
-                trackEvent("unlock_click", { source: "hero" });
+                trackEvent("checkout_started", { source: "hero" });
                 void startCheckout();
               }}
               type="button"

@@ -23,7 +23,7 @@ export function LandingNav() {
           <button
             className="button button--primary"
             onClick={() => {
-              trackEvent("unlock_click", { source: "nav" });
+              trackEvent("checkout_started", { source: "nav" });
               void startCheckout();
             }}
             type="button"

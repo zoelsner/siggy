@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 
+import { MarketingScripts } from "@/components/marketing-scripts";
+import { SCRUB_ACCESS_PARAMS_SCRIPT } from "@/lib/billing/access-params";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -33,6 +36,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Keep first in <head>: a parser-blocking inline script that removes purchase credentials from the URL
+            before hydration or any third-party script (see lib/billing/access-params.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: SCRUB_ACCESS_PARAMS_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -43,6 +49,7 @@ export default function RootLayout({
       <body>
         {children}
         <Analytics />
+        <MarketingScripts />
       </body>
     </html>
   );
